@@ -1,166 +1,244 @@
-import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { type User } from '../types'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 
-// Mock users for testing
-const MOCK_USERS: User[] = [
+const steps = [
   {
-    id: 'user-123',
-    email: 'anna@keygo.se',
-    name: 'Anna Andersson',
-    phone: '070-123 45 67',
-    licenseNumber: 'ABC123456',
-    role: 'both',
+    number: 1,
+    title: 'Create or find a request',
+    description: 'Owners create requests, drivers find them',
+    bgColor: '#2563EB',
   },
   {
-    id: 'user-456',
-    email: 'owner@keygo.se',
-    name: 'Erik Ägare',
-    phone: '070-234 56 78',
-    licenseNumber: 'DEF789012',
-    role: 'owner',
+    number: 2,
+    title: 'Accept and chat',
+    description: 'Drivers accept and you coordinate via chat',
+    bgColor: '#2563EB',
   },
   {
-    id: 'user-789',
-    email: 'driver@keygo.se',
-    name: 'Sara Förare',
-    phone: '070-345 67 89',
-    licenseNumber: 'GHI345678',
-    role: 'driver',
+    number: 3,
+    title: 'Complete and rate',
+    description: 'After the trip, you rate each other',
+    bgColor: '#2563EB',
   },
 ]
 
-// Mock authentication function
-async function mockLogin(email: string, password: string): Promise<User | null> {
-  // TODO: Replace with actual API call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Accept any password for mock users, or accept any email/password for testing
-      const user = MOCK_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase())
-      if (user) {
-        // For mock users, accept any password
-        resolve(user)
-      } else if (password.length >= 4) {
-        // For any other email, accept if password is at least 4 characters
-        resolve({
-          id: `user-${Date.now()}`,
-          email,
-          name: email.split('@')[0],
-          role: 'both',
-        })
-      } else {
-        resolve(null)
-      }
-    }, 500)
-  })
-}
-
 export default function LoginPage() {
+  const [currentCardIndex, setCurrentCardIndex] = useState(0)
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const location = useLocation()
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+  // Change card every 2.5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentCardIndex((prevIndex) => (prevIndex + 1) % steps.length)
+    }, 2500)
 
-    try {
-      const user = await mockLogin(email, password)
-      if (user) {
-        // Store user in localStorage for mock auth
-        localStorage.setItem('keygo_user', JSON.stringify(user))
-        localStorage.setItem('keygo_auth', 'true')
-        navigate('/dashboard')
-      } else {
-        setError('Ogiltig e-post eller lösenord')
+    return () => clearInterval(interval)
+  }, [])
+
+  const navItems = [
+    {
+      name: 'Request',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      ),
+      path: '/create-request',
+      onClick: () => navigate('/create-request')
+    },
+    {
+      name: 'Requests',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      ),
+      path: '/browse',
+      onClick: () => navigate('/browse')
+    },
+    {
+      name: 'Log in',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+        </svg>
+      ),
+      path: '/',
+      onClick: () => navigate('/')
+    },
+    {
+      name: 'Help',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      path: '/help',
+      onClick: () => {
+        // Placeholder for help - could navigate to a help page or show a modal
+        alert('Help section coming soon!')
       }
-    } catch (err) {
-      setError('Ett fel uppstod. Försök igen.')
-      console.error('Login error:', err)
-    } finally {
-      setLoading(false)
+    },
+    {
+      name: 'Profile',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+      path: '/profile',
+      onClick: () => navigate('/profile')
     }
-  }
+  ]
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
-        <div>
-          <h2 className="text-center text-3xl font-bold text-gray-900">
-            Keygo
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Logga in för att fortsätta
-          </p>
-        </div>
-
-        {/* Mock credentials info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-          <p className="text-xs font-medium text-blue-900 mb-2">Testkonton:</p>
-          <div className="text-xs text-blue-700 space-y-1">
-            <p><strong>anna@keygo.se</strong> / lösenord (ägare & förare)</p>
-            <p><strong>owner@keygo.se</strong> / lösenord (ägare)</p>
-            <p><strong>driver@keygo.se</strong> / lösenord (förare)</p>
-            <p className="mt-2 text-blue-600">Eller använd valfri e-post + lösenord (minst 4 tecken)</p>
+    <div style={{ position: 'relative', minHeight: '100vh', paddingBottom: '80px' }}>
+      <div className="flex justify-center px-4 pt-4">
+        <div className="max-w-md w-full space-y-8">
+          {/* Keygo Introduction */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-semibold mb-0.5" style={{ color: '#1F2937' }}>KeyGo</h1>
+            <p className="text-base font-normal mb-6" style={{ color: '#6B7280' }}>
+              Turning trips into help
+            </p>
+            
+            {/* How it works - Swipe Animation Cards */}
+            <div className="mb-12">
+              <div className="overflow-hidden relative w-full flex justify-center items-center" style={{ height: '180px', pointerEvents: 'none', userSelect: 'none' }}>
+                {steps.map((step, index) => {
+                  const isActive = index === currentCardIndex
+                  
+                  // Always come from right (150%) and go to left (-150%)
+                  // Calculate position based on how many steps away from current
+                  let translateX = 150
+                  let opacity = 0
+                  
+                  if (isActive) {
+                    translateX = 0
+                    opacity = 1
+                  } else {
+                    // Calculate the difference, accounting for wrap-around
+                    let diff = index - currentCardIndex
+                    if (diff < 0) {
+                      diff = steps.length + diff // Wrap around
+                    }
+                    
+                    if (diff === 1) {
+                      // Next card - coming from right
+                      translateX = 150
+                    } else {
+                      // All others - already gone to left
+                      translateX = -150
+                    }
+                    opacity = 0
+                  }
+                  
+                  return (
+                    <div
+                      key={step.number}
+                      className="absolute transition-all transform duration-700"
+                      style={{ 
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                        transform: `translateX(${translateX}%)`,
+                        opacity: opacity,
+                        width: 'calc(100vw - 3rem)',
+                        maxWidth: '20rem'
+                      }}
+                    >
+                      <div 
+                        className="backdrop-blur-md p-6 border-2"
+                        style={{ 
+                          borderRadius: '20px', 
+                          overflow: 'hidden',
+                          backgroundColor: step.bgColor,
+                          borderColor: '#E5ECF9',
+                          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)'
+                        }}
+                      >
+                        <div className="flex items-start space-x-4">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-medium mb-2" style={{ color: '#FFFFFF' }}>
+                              {step.title}
+                            </h3>
+                            <p className="text-sm font-normal" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                              {step.description}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {/* Indicator Dots */}
+              <div className="flex justify-center items-center gap-2 mt-4">
+                {steps.map((step, index) => {
+                  const isActive = index === currentCardIndex
+                  return (
+                    <div
+                      key={step.number}
+                      className="transition-all duration-300"
+                      style={{
+                        width: isActive ? '24px' : '8px',
+                        height: '8px',
+                        borderRadius: isActive ? '4px' : '50%',
+                        backgroundColor: isActive ? '#2563EB' : '#6B7280'
+                      }}
+                    />
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </div>
-
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                E-post
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="din@epost.se"
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Lösenord
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="••••••••"
-                disabled={loading}
-                minLength={4}
-              />
-            </div>
-          </div>
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Loggar in...' : 'Logga in'}
-            </button>
-          </div>
-        </form>
       </div>
+
+      {/* Bottom Navigation - Fixed at bottom of viewport */}
+      <nav 
+        className="fixed bottom-0 left-0 right-0 shadow-lg" 
+        style={{ 
+          zIndex: 9999,
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0
+        }}
+      >
+        <div className="max-w-md mx-auto rounded-t-2xl" style={{ backgroundColor: '#2563EB', borderColor: '#E5ECF9', borderTopWidth: '2px', borderTopStyle: 'solid' }}>
+          <div className="flex justify-around items-center h-16 px-2 py-2">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path
+              return (
+                <button
+                  key={item.name}
+                  onClick={item.onClick}
+                  className="flex flex-col items-center justify-center flex-1 h-full transition-colors"
+                  style={{ 
+                    color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.7)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)'
+                    }
+                  }}
+                >
+                  <div style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {item.icon}
+                  </div>
+                  <span className="text-xs font-medium mt-0.5" style={{ fontSize: '10px' }}>{item.name}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </nav>
     </div>
   )
 }

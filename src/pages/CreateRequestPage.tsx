@@ -61,38 +61,38 @@ export default function CreateRequestPage() {
     const newErrors: FormErrors = {}
 
     if (!formData.from.trim()) {
-      newErrors.from = 'Hämtningsplats krävs'
+      newErrors.from = 'Pickup location is required'
     }
 
     if (!formData.to.trim()) {
-      newErrors.to = 'Leveransplats krävs'
+      newErrors.to = 'Dropoff location is required'
     }
 
     if (!formData.date) {
-      newErrors.date = 'Datum krävs'
+      newErrors.date = 'Date is required'
     } else {
       const selectedDate = new Date(formData.date)
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       if (selectedDate < today) {
-        newErrors.date = 'Datumet kan inte vara i det förflutna'
+        newErrors.date = 'Date cannot be in the past'
       }
     }
 
     if (!formData.time) {
-      newErrors.time = 'Tid krävs'
+      newErrors.time = 'Time is required'
     }
 
     if (!formData.insuranceCompany.trim()) {
-      newErrors.insuranceCompany = 'Försäkringsbolag krävs'
+      newErrors.insuranceCompany = 'Insurance company is required'
     }
 
     if (!formData.deductibleAmount.trim()) {
-      newErrors.deductibleAmount = 'Självrisk krävs'
+      newErrors.deductibleAmount = 'Deductible is required'
     } else {
       const amount = parseFloat(formData.deductibleAmount)
       if (isNaN(amount) || amount < 0) {
-        newErrors.deductibleAmount = 'Självrisk måste vara ett giltigt belopp'
+        newErrors.deductibleAmount = 'Deductible must be a valid amount'
       }
     }
 
@@ -138,10 +138,10 @@ export default function CreateRequestPage() {
       })
 
       // TODO: Show success message and redirect
-      console.log('Förfrågan skapad:', request)
-      navigate(`/request/${request.id}`)
+      console.log('Request created:', request)
+      navigate('/home')
     } catch (error) {
-      console.error('Kunde inte skapa förfrågan:', error)
+      console.error('Could not create request:', error)
       // TODO: Show error message to user
     } finally {
       setIsSubmitting(false)
@@ -149,22 +149,22 @@ export default function CreateRequestPage() {
   }
 
   const handleCancel = () => {
-    navigate('/dashboard')
+    navigate('/home')
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Skapa förfrågan</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Skapa en ny förfrågan för bilflyttning
+    <div className="space-y-6 pb-20">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold mb-2" style={{ color: '#1F2937' }}>Create Request</h1>
+        <p className="text-base font-normal" style={{ color: '#6B7280' }}>
+          Create a new car relocation request
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 space-y-6 border-2" style={{ borderColor: '#E5ECF9' }}>
         <div>
-          <label htmlFor="from" className="block text-sm font-medium text-gray-700">
-            Hämtningsplats <span className="text-red-500">*</span>
+          <label htmlFor="from" className="block text-sm font-medium mb-2" style={{ color: '#1F2937' }}>
+            Pickup Location <span style={{ color: '#991B1B' }}>*</span>
           </label>
           <input
             id="from"
@@ -172,19 +172,29 @@ export default function CreateRequestPage() {
             type="text"
             value={formData.from}
             onChange={handleChange('from')}
-            className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-              errors.from ? 'border-red-300' : 'border-gray-300'
-            }`}
-            placeholder="t.ex. Stockholm, Centralstation"
+            className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all"
+            style={{ 
+              border: `2px solid ${errors.from ? '#991B1B' : '#E5ECF9'}`,
+              color: '#1F2937'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#2563EB'
+              e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)'
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = errors.from ? '#991B1B' : '#E5ECF9'
+              e.target.style.boxShadow = 'none'
+            }}
+                  placeholder="e.g. Stockholm, Central Station"
           />
           {errors.from && (
-            <p className="mt-1 text-sm text-red-600">{errors.from}</p>
+            <p className="mt-1 text-sm" style={{ color: '#991B1B' }}>{errors.from}</p>
           )}
         </div>
 
         <div>
-          <label htmlFor="to" className="block text-sm font-medium text-gray-700">
-            Leveransplats <span className="text-red-500">*</span>
+          <label htmlFor="to" className="block text-sm font-medium mb-2" style={{ color: '#1F2937' }}>
+            Dropoff Location <span style={{ color: '#991B1B' }}>*</span>
           </label>
           <input
             id="to"
@@ -192,20 +202,30 @@ export default function CreateRequestPage() {
             type="text"
             value={formData.to}
             onChange={handleChange('to')}
-            className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-              errors.to ? 'border-red-300' : 'border-gray-300'
-            }`}
-            placeholder="t.ex. Göteborg, Centralstation"
+            className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all"
+            style={{ 
+              border: `2px solid ${errors.to ? '#991B1B' : '#E5ECF9'}`,
+              color: '#1F2937'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#2563EB'
+              e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)'
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = errors.to ? '#991B1B' : '#E5ECF9'
+              e.target.style.boxShadow = 'none'
+            }}
+                  placeholder="e.g. Gothenburg, Central Station"
           />
           {errors.to && (
-            <p className="mt-1 text-sm text-red-600">{errors.to}</p>
+            <p className="mt-1 text-sm" style={{ color: '#991B1B' }}>{errors.to}</p>
           )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-              Önskat datum <span className="text-red-500">*</span>
+            <label htmlFor="date" className="block text-sm font-medium mb-2" style={{ color: '#1F2937' }}>
+              Desired Date <span style={{ color: '#991B1B' }}>*</span>
             </label>
             <input
               id="date"
@@ -214,18 +234,28 @@ export default function CreateRequestPage() {
               value={formData.date}
               onChange={handleChange('date')}
               min={new Date().toISOString().split('T')[0]}
-              className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                errors.date ? 'border-red-300' : 'border-gray-300'
-              }`}
+              className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all"
+              style={{ 
+                border: `2px solid ${errors.date ? '#991B1B' : '#E5ECF9'}`,
+                color: '#1F2937'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#2563EB'
+                e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)'
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = errors.date ? '#991B1B' : '#E5ECF9'
+                e.target.style.boxShadow = 'none'
+              }}
             />
             {errors.date && (
-              <p className="mt-1 text-sm text-red-600">{errors.date}</p>
+              <p className="mt-1 text-sm" style={{ color: '#991B1B' }}>{errors.date}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="time" className="block text-sm font-medium text-gray-700">
-              Önskad tid <span className="text-red-500">*</span>
+            <label htmlFor="time" className="block text-sm font-medium mb-2" style={{ color: '#1F2937' }}>
+              Desired Time <span style={{ color: '#991B1B' }}>*</span>
             </label>
             <input
               id="time"
@@ -233,31 +263,51 @@ export default function CreateRequestPage() {
               type="time"
               value={formData.time}
               onChange={handleChange('time')}
-              className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                errors.time ? 'border-red-300' : 'border-gray-300'
-              }`}
+              className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all"
+              style={{ 
+                border: `2px solid ${errors.time ? '#991B1B' : '#E5ECF9'}`,
+                color: '#1F2937'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#2563EB'
+                e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)'
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = errors.time ? '#991B1B' : '#E5ECF9'
+                e.target.style.boxShadow = 'none'
+              }}
             />
             {errors.time && (
-              <p className="mt-1 text-sm text-red-600">{errors.time}</p>
+              <p className="mt-1 text-sm" style={{ color: '#991B1B' }}>{errors.time}</p>
             )}
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="insuranceCompany" className="block text-sm font-medium text-gray-700">
-              Försäkringsbolag <span className="text-red-500">*</span>
+            <label htmlFor="insuranceCompany" className="block text-sm font-medium mb-2" style={{ color: '#1F2937' }}>
+              Insurance Company <span style={{ color: '#991B1B' }}>*</span>
             </label>
             <select
               id="insuranceCompany"
               name="insuranceCompany"
               value={formData.insuranceCompany}
               onChange={handleChange('insuranceCompany')}
-              className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                errors.insuranceCompany ? 'border-red-300' : 'border-gray-300'
-              }`}
+              className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all"
+              style={{ 
+                border: `2px solid ${errors.insuranceCompany ? '#991B1B' : '#E5ECF9'}`,
+                color: '#1F2937'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#2563EB'
+                e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)'
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = errors.insuranceCompany ? '#991B1B' : '#E5ECF9'
+                e.target.style.boxShadow = 'none'
+              }}
             >
-              <option value="">Välj försäkringsbolag</option>
+              <option value="">Select insurance company</option>
               <option value="Folksam">Folksam</option>
               <option value="Länsförsäkringar">Länsförsäkringar</option>
               <option value="If">If</option>
@@ -265,16 +315,16 @@ export default function CreateRequestPage() {
               <option value="Gjensidige">Gjensidige</option>
               <option value="ICA Försäkring">ICA Försäkring</option>
               <option value="Svedea">Svedea</option>
-              <option value="Annat">Annat</option>
+              <option value="Other">Other</option>
             </select>
             {errors.insuranceCompany && (
-              <p className="mt-1 text-sm text-red-600">{errors.insuranceCompany}</p>
+              <p className="mt-1 text-sm" style={{ color: '#991B1B' }}>{errors.insuranceCompany}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="deductibleAmount" className="block text-sm font-medium text-gray-700">
-              Självrisk (SEK) <span className="text-red-500">*</span>
+            <label htmlFor="deductibleAmount" className="block text-sm font-medium mb-2" style={{ color: '#1F2937' }}>
+              Deductible (SEK) <span style={{ color: '#991B1B' }}>*</span>
             </label>
             <input
               id="deductibleAmount"
@@ -284,20 +334,30 @@ export default function CreateRequestPage() {
               step="100"
               value={formData.deductibleAmount}
               onChange={handleChange('deductibleAmount')}
-              className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                errors.deductibleAmount ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder="t.ex. 5000"
+              className="mt-1 block w-full px-3 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all"
+              style={{ 
+                border: `2px solid ${errors.deductibleAmount ? '#991B1B' : '#E5ECF9'}`,
+                color: '#1F2937'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#2563EB'
+                e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)'
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = errors.deductibleAmount ? '#991B1B' : '#E5ECF9'
+                e.target.style.boxShadow = 'none'
+              }}
+              placeholder="e.g. 5000"
             />
             {errors.deductibleAmount && (
-              <p className="mt-1 text-sm text-red-600">{errors.deductibleAmount}</p>
+              <p className="mt-1 text-sm" style={{ color: '#991B1B' }}>{errors.deductibleAmount}</p>
             )}
           </div>
         </div>
 
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-            Ytterligare information
+          <label htmlFor="notes" className="block text-sm font-medium mb-2" style={{ color: '#1F2937' }}>
+            Additional Information
           </label>
           <textarea
             id="notes"
@@ -305,26 +365,71 @@ export default function CreateRequestPage() {
             rows={4}
             value={formData.notes}
             onChange={handleChange('notes')}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Eventuella särskilda instruktioner eller information..."
+            className="mt-1 block w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 transition-all"
+            style={{ 
+              border: '2px solid #E5ECF9',
+              color: '#1F2937'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#2563EB'
+              e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)'
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#E5ECF9'
+              e.target.style.boxShadow = 'none'
+            }}
+            placeholder="Any special instructions or information..."
           />
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-4 border-t">
+        <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6 border-t-2" style={{ borderColor: '#E5ECF9' }}>
           <button
             type="button"
             onClick={handleCancel}
             disabled={isSubmitting}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-8 py-3 rounded-lg font-semibold text-base focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            style={{ 
+              border: '2px solid #E5ECF9',
+              backgroundColor: '#E5ECF9',
+              color: '#1F2937'
+            }}
+            onMouseEnter={(e) => {
+              if (!isSubmitting) {
+                e.currentTarget.style.backgroundColor = '#D1D9E6'
+                e.currentTarget.style.borderColor = '#D1D9E6'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSubmitting) {
+                e.currentTarget.style.backgroundColor = '#E5ECF9'
+                e.currentTarget.style.borderColor = '#E5ECF9'
+              }
+            }}
           >
-            Avbryt
+            Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+            className="px-8 py-3 rounded-lg font-semibold text-base text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] shadow-lg"
+            style={{ 
+              border: '2px solid #2563EB',
+              backgroundColor: '#2563EB'
+            }}
+            onMouseEnter={(e) => {
+              if (!isSubmitting) {
+                e.currentTarget.style.backgroundColor = '#1D4ED8'
+                e.currentTarget.style.borderColor = '#1D4ED8'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSubmitting) {
+                e.currentTarget.style.backgroundColor = '#2563EB'
+                e.currentTarget.style.borderColor = '#2563EB'
+              }
+            }}
           >
-            {isSubmitting ? 'Skapar...' : 'Skapa förfrågan'}
+            {isSubmitting ? 'Creating...' : 'Create Request'}
           </button>
         </div>
       </form>

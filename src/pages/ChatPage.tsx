@@ -12,21 +12,21 @@ async function fetchMessages(requestId: string): Promise<Message[]> {
           id: 'msg-1',
           requestId,
           senderId: 'owner-123',
-          content: 'Hej! Tack för att du accepterade min förfrågan. När kan vi träffas?',
+          content: 'Hi! Thanks for accepting my request. When can we meet?',
           timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
         },
         {
           id: 'msg-2',
           requestId,
           senderId: 'driver-456',
-          content: 'Hej! Jag kan träffas vid centralstationen kl 14:00. Fungerar det?',
+          content: 'Hi! I can meet at the central station at 14:00. Does that work?',
           timestamp: new Date(Date.now() - 3300000).toISOString(), // 55 minutes ago
         },
         {
           id: 'msg-3',
           requestId,
           senderId: 'owner-123',
-          content: 'Perfekt! Jag ses där då. Nycklarna har jag med mig.',
+          content: 'Perfect! I\'ll see you there. I have the keys with me.',
           timestamp: new Date(Date.now() - 3000000).toISOString(), // 50 minutes ago
         },
       ])
@@ -68,7 +68,7 @@ export default function ChatPage() {
         const data = await fetchMessages(requestId)
         setMessages(data)
       } catch (error) {
-        console.error('Kunde inte hämta meddelanden:', error)
+        console.error('Could not fetch messages:', error)
       } finally {
         setLoading(false)
       }
@@ -103,7 +103,7 @@ export default function ChatPage() {
       const newMessage = await sendMessage(requestId, content, currentUserId)
       setMessages((prev) => [...prev, newMessage])
     } catch (error) {
-      console.error('Kunde inte skicka meddelande:', error)
+      console.error('Could not send message:', error)
       // Restore message input on error
       setMessageInput(content)
     } finally {
@@ -117,12 +117,12 @@ export default function ChatPage() {
     const diff = now.getTime() - date.getTime()
     const minutes = Math.floor(diff / 60000)
 
-    if (minutes < 1) return 'Nu'
-    if (minutes < 60) return `${minutes} min sedan`
+    if (minutes < 1) return 'Now'
+    if (minutes < 60) return `${minutes} min ago`
     if (date.toDateString() === now.toDateString()) {
-      return date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     }
-    return date.toLocaleDateString('sv-SE', {
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -138,17 +138,17 @@ export default function ChatPage() {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Chatt</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Förfrågan #{requestId}
+          <h1 className="text-2xl font-semibold" style={{ color: '#1F2937' }}>Chat</h1>
+          <p className="mt-1 text-sm font-normal" style={{ color: '#6B7280' }}>
+            Request #{requestId}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow flex flex-col" style={{ height: '600px' }}>
+        <div className="bg-white rounded-xl shadow-xl flex flex-col border-2" style={{ height: '600px', borderColor: '#E5ECF9' }}>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             <div className="animate-pulse space-y-4">
-              <div className="h-16 bg-gray-200 rounded-lg w-3/4"></div>
-              <div className="h-16 bg-gray-200 rounded-lg w-3/4 ml-auto"></div>
-              <div className="h-16 bg-gray-200 rounded-lg w-2/3"></div>
+              <div className="h-16 rounded-lg w-3/4" style={{ backgroundColor: '#E5ECF9' }}></div>
+              <div className="h-16 rounded-lg w-3/4 ml-auto" style={{ backgroundColor: '#E5ECF9' }}></div>
+              <div className="h-16 rounded-lg w-2/3" style={{ backgroundColor: '#E5ECF9' }}></div>
             </div>
           </div>
         </div>
@@ -157,19 +157,21 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6 pb-20">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Chatt</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Förfrågan #{requestId}
-        </p>
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold mb-2" style={{ color: '#1F2937' }}>Chatt</h1>
+          <p className="text-base font-normal" style={{ color: '#6B7280' }}>
+            Förfrågan #{requestId}
+          </p>
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow flex flex-col" style={{ height: '600px' }}>
+      <div className="bg-white rounded-xl shadow-xl flex flex-col border-2" style={{ height: '600px', borderColor: '#E5ECF9' }}>
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-gray-500">Inga meddelanden ännu. Börja konversationen!</p>
+              <p style={{ color: '#6B7280' }}>No messages yet. Start the conversation!</p>
             </div>
           ) : (
             <>
@@ -179,17 +181,18 @@ export default function ChatPage() {
                   className={`flex ${isOwnMessage(message.senderId) ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`rounded-lg p-3 max-w-xs ${
-                      isOwnMessage(message.senderId)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}
+                    className="rounded-lg p-3 max-w-xs"
+                    style={{
+                      backgroundColor: isOwnMessage(message.senderId) ? '#2563EB' : '#E5ECF9',
+                      color: isOwnMessage(message.senderId) ? '#FFFFFF' : '#1F2937'
+                    }}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm font-normal">{message.content}</p>
                     <p
-                      className={`text-xs mt-1 ${
-                        isOwnMessage(message.senderId) ? 'text-blue-100' : 'text-gray-500'
-                      }`}
+                      className="text-xs mt-1"
+                      style={{
+                        color: isOwnMessage(message.senderId) ? 'rgba(255, 255, 255, 0.8)' : '#6B7280'
+                      }}
                     >
                       {formatTime(message.timestamp)}
                     </p>
@@ -200,22 +203,51 @@ export default function ChatPage() {
             </>
           )}
         </div>
-        <div className="border-t p-4">
+        <div className="border-t-2 p-4" style={{ borderColor: '#E5ECF9' }}>
           <form onSubmit={handleSendMessage} className="flex space-x-4">
             <input
               type="text"
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
-              placeholder="Skriv ett meddelande..."
+              placeholder="Write a message..."
               disabled={sending}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="flex-1 px-3 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-all"
+              style={{ 
+                border: '2px solid #E5ECF9',
+                color: '#1F2937',
+                backgroundColor: sending ? '#E5ECF9' : '#FFFFFF'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#2563EB'
+                e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)'
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#E5ECF9'
+                e.target.style.boxShadow = 'none'
+              }}
             />
             <button
               type="submit"
               disabled={!messageInput.trim() || sending}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+              className="px-6 py-3 rounded-lg font-semibold text-base text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] shadow-lg"
+              style={{ 
+                border: '2px solid #2563EB',
+                backgroundColor: '#2563EB'
+              }}
+              onMouseEnter={(e) => {
+                if (!sending && messageInput.trim()) {
+                  e.currentTarget.style.backgroundColor = '#1D4ED8'
+                  e.currentTarget.style.borderColor = '#1D4ED8'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!sending && messageInput.trim()) {
+                  e.currentTarget.style.backgroundColor = '#2563EB'
+                  e.currentTarget.style.borderColor = '#2563EB'
+                }
+              }}
             >
-              {sending ? 'Skickar...' : 'Skicka'}
+              {sending ? 'Sending...' : 'Send'}
             </button>
           </form>
         </div>
@@ -223,10 +255,23 @@ export default function ChatPage() {
 
       <div className="flex justify-end">
         <Link
-          to="/dashboard"
-          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          to="/chat"
+          className="px-8 py-3 rounded-lg font-semibold text-base transition-all"
+          style={{ 
+            border: '2px solid #E5ECF9',
+            backgroundColor: '#E5ECF9',
+            color: '#1F2937'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#D1D9E6'
+            e.currentTarget.style.borderColor = '#D1D9E6'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#E5ECF9'
+            e.currentTarget.style.borderColor = '#E5ECF9'
+          }}
         >
-          Tillbaka till översikt
+          Back to Chats
         </Link>
       </div>
     </div>

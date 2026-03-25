@@ -1,98 +1,86 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { type ReactElement } from 'react'
+import { type ReactNode, useLayoutEffect } from 'react'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import Layout from './components/Layout'
-import LoginPage from './pages/LoginPage'
-import LandingPage from './pages/LandingPage'
-import CreateRequestPage from './pages/CreateRequestPage'
-import BrowseRequestsPage from './pages/BrowseRequestsPage'
-import RequestDetailPage from './pages/RequestDetailPage'
-import ChatListPage from './pages/ChatListPage'
-import ChatPage from './pages/ChatPage'
+import AuthPage from './pages/AuthPage'
+import HomePage from './pages/HomePage'
+import CreateTripPage from './pages/CreateTripPage'
+import TripListPage from './pages/TripListPage'
+import MyTripsPage from './pages/MyTripsPage'
+import TripDetailPage from './pages/TripDetailPage'
+import ActivityPage from './pages/ActivityPage'
 import ProfilePage from './pages/ProfilePage'
+import { getStoredUser, isLoggedIn } from './lib/authStorage'
+import type { UserRole } from './types'
 
-// Protected Route Component
-function ProtectedRoute({ children }: { children: ReactElement }) {
-  const isAuthenticated = localStorage.getItem('keygo_auth') === 'true'
-  return isAuthenticated ? children : <Navigate to="/" replace />
+/** Avoid render-phase <Navigate> on `/` — it can fight with other redirects and hit max update depth. */
+function PublicAuthScreen() {
+  const navigate = useNavigate()
+  const loggedIn = isLoggedIn()
+
+  useLayoutEffect(() => {
+    if (loggedIn) navigate('/home', { replace: true })
+  }, [loggedIn, navigate])
+
+  if (loggedIn) return null
+  return <AuthPage />
 }
 
-function App() {
+function ProtectedLayout() {
+  const navigate = useNavigate()
+  const loggedIn = isLoggedIn()
+
+  useLayoutEffect(() => {
+    if (!loggedIn) navigate('/', { replace: true })
+  }, [loggedIn, navigate])
+
+  if (!loggedIn) return null
+  return <Layout />
+}
+
+function WildcardRedirect() {
+  const navigate = useNavigate()
+  useLayoutEffect(() => {
+    navigate(isLoggedIn() ? '/home' : '/', { replace: true })
+  }, [navigate])
+  return null
+}
+
+function RoleRoute({ role, children }: { role: UserRole; children: ReactNode }) {
+  const user = getStoredUser()
+  if (!user || user.role !== role) {
+    return <Navigate to="/home" replace />
+  }
+  return <>{children}</>
+}
+
+export default function App() {
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<LoginPage />} />
+    <Routes>
+      <Route path="/" element={<PublicAuthScreen />} />
+      <Route element={<ProtectedLayout />}>
+        <Route path="/home" element={<HomePage />} />
         <Route
-          path="/home"
+          path="/trips/new"
           element={
-            <ProtectedRoute>
-              <LandingPage />
-            </ProtectedRoute>
+            <RoleRoute role="owner">
+              <CreateTripPage />
+            </RoleRoute>
           }
         />
         <Route
-          path="/create-request"
+          path="/trips/available"
           element={
-            <ProtectedRoute>
-              <CreateRequestPage />
-            </ProtectedRoute>
+            <RoleRoute role="driver">
+              <TripListPage />
+            </RoleRoute>
           }
         />
-        <Route
-          path="/browse"
-          element={
-            <ProtectedRoute>
-              <BrowseRequestsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/request/:id"
-          element={
-            <ProtectedRoute>
-              <RequestDetailPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/chat"
-          element={
-            <ProtectedRoute>
-              <ChatListPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/chat/:requestId"
-          element={
-            <ProtectedRoute>
-              <ChatPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        {/* Redirect old dashboard route to home */}
-        <Route path="/dashboard" element={<Navigate to="/home" replace />} />
-        {/* Catch all - redirect to home if logged in, otherwise login */}
-        <Route
-          path="*"
-          element={
-            localStorage.getItem('keygo_auth') === 'true' ? (
-              <Navigate to="/home" replace />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
-        />
-      </Routes>
-    </Layout>
+        <Route path="/trips/mine" element={<MyTripsPage />} />
+        <Route path="/trips/:id" element={<TripDetailPage />} />
+        <Route path="/activity" element={<ActivityPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+      </Route>
+      <Route path="*" element={<WildcardRedirect />} />
+    </Routes>
   )
 }
-
-export default App

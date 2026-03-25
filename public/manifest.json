@@ -1,7 +1,7 @@
 {
   "name": "Keygo",
   "short_name": "Keygo",
-  "description": "Frivillig bilflyttning i Sverige",
+  "description": "Relocate your vehicle when you cannot drive — not passenger transport.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

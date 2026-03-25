@@ -1,49 +1,28 @@
-// Type definitions for Keygo app
+export type UserRole = 'owner' | 'driver'
 
 export interface User {
   id: string
   email: string
   name: string
-  phone?: string
-  licenseNumber?: string
-  role?: 'owner' | 'driver' | 'both'
+  role: UserRole
 }
 
-export interface Request {
+export type TripStatus = 'pending' | 'accepted' | 'completed'
+
+export interface TripParty {
   id: string
-  ownerId: string
-  driverId?: string
-  from: string
-  to: string
-  date: string
-  time: string
-  notes?: string
-  insuranceCompany: string
-  deductibleAmount: number
-  status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled'
+  name: string
+  email: string
+}
+
+export interface Trip {
+  id: string
+  pickupLocation: string
+  dropoffLocation: string
+  carDescription: string
+  paymentAmount: number
+  status: TripStatus
   createdAt: string
+  owner?: TripParty
+  driver?: TripParty
 }
-
-export interface AgreementState {
-  driverAcknowledged: boolean
-  ownerAcknowledged: boolean
-}
-
-export interface Message {
-  id: string
-  requestId: string
-  senderId: string
-  content: string
-  timestamp: string
-}
-
-export interface Rating {
-  id: string
-  requestId: string
-  fromUserId: string
-  toUserId: string
-  rating: number
-  comment?: string
-  createdAt: string
-}
-

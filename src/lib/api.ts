@@ -1,6 +1,5 @@
 import { getToken } from './authStorage'
-
-const API_ORIGIN = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? ''
+import { getApiOrigin } from './apiOrigin'
 
 export class ApiError extends Error {
   status: number
@@ -21,6 +20,9 @@ function isPublicAuthPath(path: string): boolean {
 }
 
 function friendlyMessage(path: string, status: number, serverMessage: string): string {
+  if (status === 0) {
+    return 'Could not reach the server. Check your network and that VITE_API_URL matches your deployed API.'
+  }
   if (status === 401 && basePath(path) === '/users/login') {
     return "We couldn’t sign you in. Check your email and password, create an account, or use a demo account below."
   }
@@ -33,7 +35,8 @@ function basePath(path: string): string {
 
 function apiUrl(path: string): string {
   const p = path.startsWith('/') ? path : `/${path}`
-  if (API_ORIGIN) return `${API_ORIGIN}/api${p}`
+  const origin = getApiOrigin()
+  if (origin) return `${origin}/api${p}`
   return `/api${p}`
 }
 
@@ -47,7 +50,14 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     headers.Authorization = `Bearer ${token}`
   }
 
-  const res = await fetch(apiUrl(path), { ...options, headers })
+  let res: Response
+  try {
+    res = await fetch(apiUrl(path), { ...options, headers })
+  } catch {
+    const msg = friendlyMessage(path, 0, '')
+    throw new ApiError(msg, 0)
+  }
+
   const data = (await res.json().catch(() => ({}))) as { error?: string }
 
   if (!res.ok) {

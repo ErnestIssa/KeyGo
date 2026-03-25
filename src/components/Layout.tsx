@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { api } from '../lib/api'
-import { getStoredUser, getToken, setSession } from '../lib/authStorage'
+import { api, ApiError } from '../lib/api'
+import { clearSession, getStoredUser, getToken, setSession } from '../lib/authStorage'
 import { useTheme } from '../theme/ThemeContext'
 import type { User } from '../types'
 import { DesktopChrome } from './layout/DesktopChrome'
@@ -23,7 +23,12 @@ export default function Layout() {
         if (getToken() !== token) return
         setSession(token, res.user)
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 401) {
+          clearSession()
+          navigate('/auth', { replace: true })
+        }
+      })
     return () => ac.abort()
   }, [])
 

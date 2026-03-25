@@ -24,7 +24,14 @@ npm run preview   # serve dist/ locally
 
 1. Set **Build command:** `npm install && npm run build`  
 2. **Publish directory:** `dist`  
-3. Add **environment variable** `VITE_API_URL` pointing at your deployed API **before** build so URLs are baked in correctly.
+3. Add **environment variable** `VITE_API_URL` pointing at your deployed API **before** build (same value as `https://<your-backend>.onrender.com`, no trailing slash). Vite inlines env at build time.
+
+## Backend CORS (Render API)
+
+Set on the **API** service:
+
+- `CORS_ORIGIN` — your **frontend** origin(s), comma-separated (e.g. `https://your-app.onrender.com`).
+- Optional: `CORS_INCLUDE_LOCALHOST=true` — also allow `http://localhost:5173` and `http://localhost:4173` when testing the deployed API from local Vite/preview while `CORS_ORIGIN` is set.
 
 ## Local full stack
 

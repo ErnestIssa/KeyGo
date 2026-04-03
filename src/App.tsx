@@ -9,6 +9,7 @@ import MyTripsPage from './pages/MyTripsPage'
 import TripDetailPage from './pages/TripDetailPage'
 import ActivityPage from './pages/ActivityPage'
 import ProfilePage from './pages/ProfilePage'
+import ProfileSectionPage from './pages/ProfileSectionPage'
 import { getStoredUser, isLoggedIn } from './lib/authStorage'
 import type { UserRole } from './types'
 
@@ -79,6 +80,7 @@ export default function App() {
         <Route path="/trips/:id" element={<TripDetailPage />} />
         <Route path="/activity" element={<ActivityPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/:section" element={<ProfileSectionPage />} />
       </Route>
       <Route path="*" element={<WildcardRedirect />} />
     </Routes>

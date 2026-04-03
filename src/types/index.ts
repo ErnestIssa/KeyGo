@@ -5,6 +5,9 @@ export interface User {
   email: string
   name: string
   role: UserRole
+  avatarUrl?: string
+  /** 0–5 display rating from API */
+  ratingAverage?: number
 }
 
 export type TripStatus = 'pending' | 'accepted' | 'completed'
@@ -25,4 +28,6 @@ export interface Trip {
   createdAt: string
   owner?: TripParty
   driver?: TripParty
+  /** From API — server-authoritative action flags */
+  allowedActions?: { accept: boolean; complete: boolean }
 }

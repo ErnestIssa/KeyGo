@@ -1,24 +1,17 @@
 import { useEffect, useState } from 'react'
+import { useSyncGlobalLoading } from '../context/LoadingOverlayContext'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { api } from '../lib/api'
 import { Card } from '../components/ui/Card'
 import type { Trip } from '../types'
 
-function Skeleton() {
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 animate-pulse" aria-hidden>
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div key={i} className="h-28 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border)]" />
-      ))}
-    </div>
-  )
-}
-
 export default function TripListPage() {
   const [trips, setTrips] = useState<Trip[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  useSyncGlobalLoading(loading)
 
   useEffect(() => {
     let cancelled = false
@@ -38,15 +31,7 @@ export default function TripListPage() {
   }, [])
 
   if (loading) {
-    return (
-      <div className="w-full max-w-none space-y-6 lg:space-y-8">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)] mb-1">For drivers</p>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--text)]">Available trips</h1>
-        </div>
-        <Skeleton />
-      </div>
-    )
+    return <div className="min-h-[40vh] w-full" aria-hidden />
   }
 
   if (error) {
@@ -79,7 +64,11 @@ export default function TripListPage() {
 
   return (
     <div className="w-full max-w-none space-y-6 lg:space-y-8">
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-4xl w-full max-lg:max-w-none"
+      >
         <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)] mb-1">For drivers</p>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--text)]">Available trips</h1>
         <p className="mt-2 text-sm sm:text-base text-[var(--text-muted)]">

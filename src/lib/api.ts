@@ -1,5 +1,6 @@
 import { getToken } from './authStorage'
 import { getApiOrigin } from './apiOrigin'
+import type { User } from '../types'
 
 export class ApiError extends Error {
   status: number
@@ -65,4 +66,12 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     throw new ApiError(msg, res.status)
   }
   return data as T
+}
+
+/** POST /api/users/avatar — `{ image: dataUrl }` */
+export async function uploadAvatar(imageDataUrl: string): Promise<{ user: User }> {
+  return api<{ user: User }>('/users/avatar', {
+    method: 'POST',
+    body: JSON.stringify({ image: imageDataUrl }),
+  })
 }

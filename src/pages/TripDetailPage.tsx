@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSyncGlobalLoading } from '../context/LoadingOverlayContext'
 import { Link, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { api } from '../lib/api'
@@ -20,6 +21,8 @@ export default function TripDetailPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null)
+
+  useSyncGlobalLoading(loading)
 
   const load = async () => {
     if (!id) return
@@ -63,16 +66,7 @@ export default function TripDetailPage() {
   const backHref = user?.role === 'driver' ? '/trips/available' : '/trips/mine'
 
   if (loading) {
-    return (
-      <div className="w-full max-w-none space-y-4 animate-pulse" aria-busy="true">
-        <div className="h-4 w-24 rounded bg-[var(--bg-subtle)]" />
-        <div className="h-10 w-2/3 max-w-md rounded bg-[var(--bg-subtle)]" />
-        <div className="grid lg:grid-cols-[1fr_320px] gap-8">
-          <div className="h-64 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border)]" />
-          <div className="h-40 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border)] hidden lg:block" />
-        </div>
-      </div>
-    )
+    return <div className="min-h-[50vh] w-full" aria-hidden />
   }
 
   if (error && !trip) {
@@ -88,10 +82,9 @@ export default function TripDetailPage() {
 
   if (!trip) return null
 
-  const isOwner = user?.id === trip.owner?.id
   const isOwnListing = user?.role === 'driver' && trip.owner?.id === user?.id
-  const canAccept = user?.role === 'driver' && trip.status === 'pending' && !isOwnListing
-  const canComplete = isOwner && trip.status === 'accepted'
+  const canAccept = trip.allowedActions?.accept === true
+  const canComplete = trip.allowedActions?.complete === true
 
   const confirmOpen = confirmKind !== null
 

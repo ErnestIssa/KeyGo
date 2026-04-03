@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useSyncGlobalLoading } from '../context/LoadingOverlayContext'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { api } from '../lib/api'
+import { getStoredUser } from '../lib/authStorage'
 import { Card } from '../components/ui/Card'
+import { Button } from '../components/ui/Button'
 import type { Trip } from '../types'
 
 const statusStyle: Record<string, string> = {
@@ -18,9 +21,12 @@ const statusLabel: Record<string, string> = {
 }
 
 export default function MyTripsPage() {
+  const navigate = useNavigate()
   const [trips, setTrips] = useState<Trip[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  useSyncGlobalLoading(loading)
 
   useEffect(() => {
     let cancelled = false
@@ -40,16 +46,7 @@ export default function MyTripsPage() {
   }, [])
 
   if (loading) {
-    return (
-      <div className="w-full max-w-none space-y-6 lg:space-y-8">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--text)]">My trips</h1>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 animate-pulse" aria-hidden>
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-24 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border)]" />
-          ))}
-        </div>
-      </div>
-    )
+    return <div className="min-h-[40vh] w-full" aria-hidden />
   }
 
   if (error) {
@@ -64,22 +61,42 @@ export default function MyTripsPage() {
   }
 
   if (trips.length === 0) {
+    const u = getStoredUser()
+    const ctaTo = u?.role === 'owner' ? '/trips/new' : '/trips/available'
+    const ctaLabel = u?.role === 'owner' ? 'Create a trip' : 'Browse available trips'
     return (
       <div className="w-full max-w-none space-y-6 lg:space-y-8">
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--text)]">My trips</h1>
           <p className="mt-2 text-sm text-[var(--text-muted)]">Trips you own or are assigned to drive appear here.</p>
         </motion.div>
-        <Card>
-          <p className="text-sm text-[var(--text-muted)] text-center py-8">No trips yet.</p>
-        </Card>
+        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 320, damping: 28 }}>
+          <Card className="max-w-md mx-auto text-center py-10 px-6 sm:px-8 rounded-3xl border-2 border-[var(--border)] shadow-2xl shadow-[var(--shadow)]/25 bg-[var(--bg-elevated)]">
+            <div className="w-14 h-14 rounded-full bg-[var(--brand-soft)] flex items-center justify-center text-2xl mx-auto mb-4" aria-hidden>
+              🗺
+            </div>
+            <h2 className="text-lg font-bold text-[var(--text)]">No trips yet</h2>
+            <p className="text-sm text-[var(--text-muted)] mt-3 leading-relaxed">
+              When you post a request or accept a drive, your trips show up here with status and payout details.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Button type="button" variant="primary" onClick={() => navigate(ctaTo)}>
+                {ctaLabel}
+              </Button>
+            </div>
+          </Card>
+        </motion.div>
       </div>
     )
   }
 
   return (
     <div className="w-full max-w-none space-y-6 lg:space-y-8">
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-4xl w-full max-lg:max-w-none"
+      >
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--text)]">My trips</h1>
         <p className="mt-2 text-sm sm:text-base text-[var(--text-muted)]">{trips.length} total</p>
       </motion.div>

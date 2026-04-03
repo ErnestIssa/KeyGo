@@ -53,7 +53,7 @@ export default function CreateTripPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="max-w-4xl"
+        className="max-w-4xl w-full max-lg:max-w-none"
       >
         <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)] mb-1">New request</p>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--text)] tracking-tight">Create a trip</h1>

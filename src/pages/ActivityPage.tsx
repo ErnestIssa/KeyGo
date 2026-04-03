@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useSyncGlobalLoading } from '../context/LoadingOverlayContext'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { api } from '../lib/api'
 import { getStoredUser } from '../lib/authStorage'
 import { Card } from '../components/ui/Card'
+import { Button } from '../components/ui/Button'
 import type { Trip } from '../types'
 
 const statusLabel: Record<string, string> = {
@@ -13,10 +15,13 @@ const statusLabel: Record<string, string> = {
 }
 
 export default function ActivityPage() {
+  const navigate = useNavigate()
   const user = getStoredUser()
   const [trips, setTrips] = useState<Trip[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  useSyncGlobalLoading(loading)
 
   useEffect(() => {
     let c = false
@@ -40,18 +45,12 @@ export default function ActivityPage() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)] mb-1">Updates</p>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--text)] tracking-tight">Activity</h1>
-        <p className="mt-2 text-sm sm:text-base text-[var(--text-muted)] max-w-2xl leading-relaxed">
+        <p className="mt-2 text-sm sm:text-base text-[var(--text-muted)] max-w-2xl max-lg:max-w-none leading-relaxed">
           Recent trips you&apos;re involved in. Full messaging will come later — for now, open a trip for details.
         </p>
       </motion.div>
 
-      {loading && (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 animate-pulse">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-28 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border)]" />
-          ))}
-        </div>
-      )}
+      {loading ? <div className="min-h-[40vh] w-full" aria-hidden /> : null}
 
       {error && (
         <Card className="border-[var(--danger)]/25 bg-[var(--danger-soft)]/20 max-w-xl">
@@ -60,11 +59,26 @@ export default function ActivityPage() {
       )}
 
       {!loading && !error && trips.length === 0 && (
-        <Card>
-          <p className="text-sm text-[var(--text-muted)] text-center py-10">
-            No trip activity yet. {user?.role === 'owner' ? 'Create a trip from the center button.' : 'Browse available trips to get started.'}
-          </p>
-        </Card>
+        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 320, damping: 28 }}>
+          <Card className="max-w-md mx-auto text-center py-10 px-6 sm:px-8 rounded-3xl border-2 border-[var(--border)] shadow-2xl shadow-[var(--shadow)]/25 bg-[var(--bg-elevated)]">
+            <div className="w-14 h-14 rounded-full bg-[var(--accent-soft)] flex items-center justify-center text-2xl mx-auto mb-4" aria-hidden>
+              ✨
+            </div>
+            <h2 className="text-lg font-bold text-[var(--text)]">No activity yet</h2>
+            <p className="text-sm text-[var(--text-muted)] mt-3 leading-relaxed">
+              Recent trip updates will appear here. Start or join a trip to see movement, status changes, and milestones.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => navigate(user?.role === 'owner' ? '/trips/new' : '/trips/available')}
+              >
+                {user?.role === 'owner' ? 'Create a trip' : 'Browse available trips'}
+              </Button>
+            </div>
+          </Card>
+        </motion.div>
       )}
 
       {!loading && trips.length > 0 && (

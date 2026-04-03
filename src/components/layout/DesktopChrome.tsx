@@ -22,6 +22,7 @@ export function DesktopChrome() {
 
   const mineSectionActive = pathname === '/trips/mine' || isTripDetailPath(pathname)
   const createActive = isOwner ? pathname === '/trips/new' : pathname === '/trips/available'
+  const profileSectionActive = pathname === '/profile' || pathname.startsWith('/profile/')
 
   return (
     <header className="hidden lg:flex shrink-0 flex-col border-b border-[var(--border)] bg-[var(--bg-elevated)]">
@@ -70,6 +71,7 @@ export function DesktopChrome() {
             to="/profile"
             label="Profile"
             icon={<IconProfile className="w-[1.125rem] h-[1.125rem]" />}
+            alsoActive={profileSectionActive}
           />
         </nav>
 

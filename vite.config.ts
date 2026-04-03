@@ -16,6 +16,10 @@ export default defineConfig(({ mode }) => {
           target: proxyTarget,
           changeOrigin: true,
         },
+        '/uploads': {
+          target: proxyTarget,
+          changeOrigin: true,
+        },
       },
     },
     preview: {
@@ -24,6 +28,10 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       proxy: {
         '/api': {
+          target: proxyTarget,
+          changeOrigin: true,
+        },
+        '/uploads': {
           target: proxyTarget,
           changeOrigin: true,
         },

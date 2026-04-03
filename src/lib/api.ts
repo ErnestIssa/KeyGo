@@ -1,4 +1,4 @@
-import { getToken } from './authStorage'
+import { getToken, setSession } from './authStorage'
 import { getApiOrigin } from './apiOrigin'
 import type { User } from '../types'
 
@@ -66,6 +66,16 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     throw new ApiError(msg, res.status)
   }
   return data as T
+}
+
+/** PATCH /api/users/role — `{ role: "owner" | "driver" }` */
+export async function switchRole(role: 'owner' | 'driver'): Promise<{ user: User; token: string }> {
+  const data = await api<{ user: User; token: string }>('/users/role', {
+    method: 'PATCH',
+    body: JSON.stringify({ role }),
+  })
+  setSession(data.token, data.user)
+  return data
 }
 
 /** POST /api/users/avatar — `{ image: dataUrl }` */

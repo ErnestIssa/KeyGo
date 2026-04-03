@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { RoleModePanel } from '../components/profile/RoleModePanel'
 import { motion } from 'framer-motion'
 import { getStoredUser, getToken, setSession, clearSession } from '../lib/authStorage'
 import { uploadAvatar, ApiError } from '../lib/api'
@@ -175,7 +176,7 @@ export default function ProfilePage() {
           <span className="font-bold capitalize text-[var(--brand)]">{user?.role}</span>
         </p>
         <p className="mt-4 text-[var(--text-muted)]">
-          Signing out clears this session in this browser. To use a different role (owner vs driver), sign out and sign in with another account — each login is tied to one role.
+          Signing out clears this session in this browser. To use Owner vs Driver tools, use Role mode on your profile — one account, no second login.
         </p>
       </Modal>
 
@@ -234,6 +235,16 @@ export default function ProfilePage() {
         </div>
       </motion.div>
 
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.055 }} className="space-y-3">
+        <RoleModePanel
+          user={user}
+          onSwitched={(next) => {
+            setUser(next)
+            navigate('/home', { replace: true })
+          }}
+        />
+      </motion.div>
+
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="space-y-3">
         <SectionGroup label="Manage" items={MANAGE} />
         <SectionGroup label="Money" items={MONEY} />
@@ -250,7 +261,7 @@ export default function ProfilePage() {
           >
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-[var(--danger)]">Sign out</p>
-              <p className="text-sm text-[var(--text-muted)] mt-0.5">View email & role, then confirm. Use another account to switch roles.</p>
+              <p className="text-sm text-[var(--text-muted)] mt-0.5">End this session. Switch Owner/Driver anytime with Role mode above.</p>
             </div>
             <span className="text-xl font-light text-[var(--danger)] shrink-0" aria-hidden>
               ›

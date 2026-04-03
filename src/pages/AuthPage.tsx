@@ -168,7 +168,7 @@ export default function AuthPage() {
                     <option value="driver">Driver — I relocate cars</option>
                   </select>
                   <p className="text-xs text-[var(--text-muted)] leading-snug">
-                    Drivers browse open trips and accept moves they can do.
+                    After sign-up, switch Owner ↔ Driver anytime from Profile → Role mode — same email and password.
                   </p>
                 </div>
               </>

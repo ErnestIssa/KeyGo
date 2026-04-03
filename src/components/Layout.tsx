@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { api, ApiError } from '../lib/api'
 import { clearSession, getStoredUser, getToken, setSession } from '../lib/authStorage'
@@ -11,7 +11,9 @@ import { MobileBottomNav } from './layout/MobileBottomNav'
 
 export default function Layout() {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const user = getStoredUser()
+  const isHomeMap = pathname === '/home'
   const { theme, toggleTheme } = useTheme()
   const [profileSyncing, setProfileSyncing] = useState(() => Boolean(getToken()))
 
@@ -84,7 +86,14 @@ export default function Layout() {
       <main
         className="flex-1 min-h-0 w-full min-w-0 max-lg:absolute max-lg:inset-0 max-lg:z-0 flex flex-col overflow-y-auto overscroll-y-contain max-lg:px-0 max-lg:pt-0 max-lg:pb-0 [scroll-padding-top:calc(3.5rem+env(safe-area-inset-top)+10px)] [scroll-padding-bottom:calc(4.5rem+env(safe-area-inset-bottom)+12px)] lg:relative lg:overflow-visible lg:px-8 xl:px-12 2xl:px-16 lg:pt-8 lg:pb-10 lg:[scroll-padding-top:0] lg:[scroll-padding-bottom:0]"
       >
-        <div className="w-full max-w-none flex min-h-full flex-1 flex-col max-lg:px-4 max-lg:pt-[calc(3.5rem+env(safe-area-inset-top)+10px)] max-lg:pb-[calc(4.5rem+env(safe-area-inset-bottom)+12px)] lg:min-h-0 lg:px-0 lg:pt-0 lg:pb-0">
+        <div
+          className={[
+            'w-full max-w-none flex min-h-full flex-1 flex-col lg:min-h-0 lg:px-0 lg:pt-0 lg:pb-0',
+            isHomeMap
+              ? 'max-lg:min-h-0 max-lg:px-0 max-lg:pt-0 max-lg:pb-[calc(4.5rem+env(safe-area-inset-bottom)+12px)]'
+              : 'max-lg:px-4 max-lg:pt-[calc(3.5rem+env(safe-area-inset-top)+10px)] max-lg:pb-[calc(4.5rem+env(safe-area-inset-bottom)+12px)]',
+          ].join(' ')}
+        >
           <Outlet />
         </div>
       </main>

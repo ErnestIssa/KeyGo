@@ -18,10 +18,22 @@ export interface TripParty {
   email: string
 }
 
+export type TripVehicleLocation = {
+  latitude: number
+  longitude: number
+  heading?: number
+  recordedAt: string
+}
+
 export interface Trip {
   id: string
   pickupLocation: string
   dropoffLocation: string
+  pickupLatitude?: number
+  pickupLongitude?: number
+  dropoffLatitude?: number
+  dropoffLongitude?: number
+  vehicleLocation?: TripVehicleLocation
   carDescription: string
   paymentAmount: number
   status: TripStatus

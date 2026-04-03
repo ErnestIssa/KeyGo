@@ -87,6 +87,7 @@ export default function ProfilePage() {
   const [safetyOpen, setSafetyOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)
+  const [avatarRev, setAvatarRev] = useState(0)
 
   useEffect(() => {
     setUser(getStoredUser())
@@ -109,6 +110,7 @@ export default function ProfilePage() {
       const { user: next } = await uploadAvatar(dataUrl)
       setSession(token, next)
       setUser(next)
+      setAvatarRev((r) => r + 1)
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Could not update photo'
       window.alert(msg)
@@ -118,7 +120,11 @@ export default function ProfilePage() {
   }
 
   const rating = user?.ratingAverage ?? 5
-  const avatarSrc = resolveMediaUrl(user?.avatarUrl)
+  const avatarSrcRaw = resolveMediaUrl(user?.avatarUrl)
+  const avatarSrc =
+    avatarSrcRaw != null && avatarSrcRaw !== ''
+      ? `${avatarSrcRaw}${avatarSrcRaw.includes('?') ? '&' : '?'}v=${avatarRev}`
+      : ''
   const initial = (user?.name ?? '?').trim().charAt(0).toUpperCase() || '?'
 
   return (
@@ -207,15 +213,20 @@ export default function ProfilePage() {
               aria-label="Change profile photo"
             >
               {avatarSrc ? (
-                <img src={avatarSrc} alt="" className="w-full h-full object-cover" />
+                <img key={avatarSrc} src={avatarSrc} alt="" className="w-full h-full object-cover" />
               ) : (
                 <span className="text-4xl font-extrabold text-[var(--brand)]">{initial}</span>
               )}
               {uploading ? (
                 <span className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-sm font-semibold">…</span>
               ) : null}
-              <span className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-[var(--brand)] border-2 border-[var(--bg-elevated)] flex items-center justify-center text-xs shadow-lg" aria-hidden>
-                📷
+              <span
+                className="pointer-events-none absolute bottom-1 right-1 flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-[var(--bg-elevated)] bg-[var(--brand)] text-white shadow-md"
+                aria-hidden
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
               </span>
             </button>
           </div>
@@ -231,7 +242,6 @@ export default function ProfilePage() {
             <span className="text-lg font-bold text-[var(--canvas-text,var(--text))]">{rating.toFixed(1)}</span>
             <span className="text-sm font-semibold text-[var(--canvas-text-muted,var(--text-muted))]">rating</span>
           </div>
-          <p className="text-xs text-[var(--canvas-text-muted,var(--text-muted))] mt-2">Click the photo to update — stored securely on the server.</p>
         </div>
       </motion.div>
 

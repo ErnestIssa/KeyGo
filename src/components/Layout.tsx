@@ -6,6 +6,7 @@ import { clearSession, getStoredUser, getToken, setSession } from '../lib/authSt
 import { useSyncGlobalLoading } from '../context/LoadingOverlayContext'
 import { useTheme } from '../theme/ThemeContext'
 import type { User } from '../types'
+import { ChatUnreadProvider } from '../context/ChatUnreadContext'
 import { DesktopChrome } from './layout/DesktopChrome'
 import { MobileBottomNav } from './layout/MobileBottomNav'
 
@@ -48,6 +49,7 @@ export default function Layout() {
   }, [navigate])
 
   return (
+    <ChatUnreadProvider>
     <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[var(--bg-page)] text-[var(--text)] transition-colors lg:h-auto lg:max-h-none lg:min-h-[100dvh] lg:overflow-visible">
       {/* Mobile / tablet: slim top bar */}
       <motion.header
@@ -100,5 +102,6 @@ export default function Layout() {
 
       <MobileBottomNav user={user} />
     </div>
+    </ChatUnreadProvider>
   )
 }

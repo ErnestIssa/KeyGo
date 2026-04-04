@@ -3,6 +3,7 @@ import { useSyncGlobalLoading } from '../context/LoadingOverlayContext'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { api } from '../lib/api'
+import { friendlyErrorMessage } from '../lib/userFriendlyError'
 import { Card } from '../components/ui/Card'
 import type { Trip } from '../types'
 
@@ -20,7 +21,7 @@ export default function TripListPage() {
         const res = await api<{ trips: Trip[] }>('/trips/available')
         if (!cancelled) setTrips(res.trips)
       } catch (e: unknown) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Could not load trips')
+        if (!cancelled) setError(friendlyErrorMessage(e))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -38,8 +39,8 @@ export default function TripListPage() {
     return (
       <div className="w-full max-w-none space-y-4">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[var(--text)]">Available trips</h1>
-        <Card className="border-[var(--danger)]/25 bg-[var(--danger-soft)]/20">
-          <p className="text-sm font-medium text-[var(--danger)]">{error}</p>
+        <Card className="border-[var(--border)] bg-[var(--bg-subtle)]">
+          <p className="text-sm text-[var(--text-muted)] leading-relaxed">{error}</p>
         </Card>
       </div>
     )

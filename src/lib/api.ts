@@ -85,3 +85,88 @@ export async function uploadAvatar(imageDataUrl: string): Promise<{ user: User }
     body: JSON.stringify({ image: imageDataUrl }),
   })
 }
+
+/** --- Chat (matched users only) --- */
+
+export type ChatUserPreview = {
+  id: string
+  name: string
+  displayName?: string
+  email?: string
+  avatarUrl?: string
+}
+
+export type ConversationListItem = {
+  id: string
+  participants: string[]
+  otherUser: ChatUserPreview
+  otherUserId: string
+  createdAt: string
+  updatedAt: string
+  lastMessageAt?: string
+  lastMessagePreview?: string
+}
+
+export type ChatMessage = {
+  id: string
+  conversationId: string
+  senderId: string
+  text: string
+  createdAt: string
+  senderDisplayName?: string
+  senderName?: string
+  senderAvatarUrl?: string
+}
+
+export async function createConversation(participantId: string) {
+  return api<{ conversation: { id: string; participants: string[]; createdAt: string; updatedAt: string } }>(
+    '/conversations',
+    { method: 'POST', body: JSON.stringify({ participantId }) },
+  )
+}
+
+export async function listConversations() {
+  return api<{ conversations: ConversationListItem[] }>('/conversations', { method: 'GET' })
+}
+
+export async function postChatMessage(conversationId: string, text: string) {
+  return api<{ message: ChatMessage }>('/messages', {
+    method: 'POST',
+    body: JSON.stringify({ conversationId, text }),
+  })
+}
+
+export async function listChatMessages(conversationId: string) {
+  return api<{ messages: ChatMessage[] }>(`/messages/${encodeURIComponent(conversationId)}`, { method: 'GET' })
+}
+
+export async function markConversationRead(conversationId: string) {
+  await api(`/conversations/${encodeURIComponent(conversationId)}/read`, { method: 'POST' })
+}
+
+export async function getChatUnreadCount(): Promise<number> {
+  const { total } = await api<{ total: number }>('/chat/unread-count', { method: 'GET' })
+  return total
+}
+
+export async function listChatMatches() {
+  return api<{ matches: { user: ChatUserPreview; conversationId: string | null }[] }>('/chat/matches', {
+    method: 'GET',
+  })
+}
+
+export type ChatRecentTripRow = {
+  id: string
+  status: string
+  pickupLocation: string
+  dropoffLocation: string
+  updatedAt: string
+  createdAt: string
+  paymentAmount: number
+  owner?: { name?: string }
+  driver?: { name?: string }
+}
+
+export async function listChatRecentTrips() {
+  return api<{ trips: ChatRecentTripRow[] }>('/chat/recent-trips', { method: 'GET' })
+}

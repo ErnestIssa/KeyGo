@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { api } from '../lib/api'
+import { friendlyErrorMessage } from '../lib/userFriendlyError'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
@@ -41,7 +42,7 @@ export default function CreateTripPage() {
       toast('Trip created — you can share details with your driver from the trip page.', 'success')
       navigate(`/trips/${res.trip.id}`, { replace: true })
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create trip')
+      setError(friendlyErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -108,7 +109,7 @@ export default function CreateTripPage() {
             </div>
           </div>
           {error && (
-            <p className="text-sm font-medium text-[var(--danger)]" role="alert">
+            <p className="text-sm text-[var(--text-muted)] rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] px-3 py-2" role="alert">
               {error}
             </p>
           )}

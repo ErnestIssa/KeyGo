@@ -4,6 +4,9 @@ export interface User {
   id: string
   email: string
   name: string
+  firstName?: string
+  lastName?: string
+  displayName?: string
   role: UserRole
   avatarUrl?: string
   /** 0–5 display rating from API */

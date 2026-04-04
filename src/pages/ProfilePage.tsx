@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom'
 import { RoleModePanel } from '../components/profile/RoleModePanel'
 import { motion } from 'framer-motion'
 import { getStoredUser, getToken, setSession, clearSession } from '../lib/authStorage'
-import { uploadAvatar, ApiError } from '../lib/api'
+import { uploadAvatar } from '../lib/api'
+import { friendlyErrorMessage } from '../lib/userFriendlyError'
 import { resolveMediaUrl } from '../lib/mediaUrl'
 import { useTheme } from '../theme/ThemeContext'
 import { Button } from '../components/ui/Button'
@@ -112,8 +113,7 @@ export default function ProfilePage() {
       setUser(next)
       setAvatarRev((r) => r + 1)
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Could not update photo'
-      window.alert(msg)
+      window.alert(friendlyErrorMessage(err))
     } finally {
       setUploading(false)
     }

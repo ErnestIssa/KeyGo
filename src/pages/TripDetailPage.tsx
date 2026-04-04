@@ -3,6 +3,7 @@ import { useSyncGlobalLoading } from '../context/LoadingOverlayContext'
 import { Link, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { api } from '../lib/api'
+import { friendlyErrorMessage } from '../lib/userFriendlyError'
 import { getStoredUser } from '../lib/authStorage'
 import { useToast } from '../context/ToastContext'
 import { Button } from '../components/ui/Button'
@@ -56,7 +57,7 @@ export default function TripDetailPage() {
       if (successMessage) toast(successMessage, 'success')
       return true
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Something went wrong')
+      setError(friendlyErrorMessage(e))
       return false
     } finally {
       setBusy(false)
@@ -71,8 +72,8 @@ export default function TripDetailPage() {
 
   if (error && !trip) {
     return (
-      <Card className="border-[var(--danger)]/25 bg-[var(--danger-soft)]/20 max-w-xl">
-        <p className="text-sm font-medium text-[var(--danger)]">{error}</p>
+      <Card className="border-[var(--border)] bg-[var(--bg-subtle)] max-w-xl">
+        <p className="text-sm text-[var(--text-muted)] leading-relaxed">{error}</p>
         <Link to={backHref} className="inline-block mt-4 text-sm font-semibold text-[var(--brand)]">
           ← Go back
         </Link>
@@ -141,7 +142,7 @@ export default function TripDetailPage() {
           </Card>
 
           {error && (
-            <p className="text-sm font-medium text-[var(--danger)] lg:hidden" role="alert">
+            <p className="text-sm text-[var(--text-muted)] lg:hidden" role="alert">
               {error}
             </p>
           )}
@@ -164,7 +165,7 @@ export default function TripDetailPage() {
           <Card className="p-5 sm:p-6 space-y-4 border-[var(--border)] bg-[var(--bg-elevated)]">
             <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">Actions</p>
             {error && (
-              <p className="text-sm font-medium text-[var(--danger)] hidden lg:block" role="alert">
+              <p className="text-sm text-[var(--text-muted)] hidden lg:block" role="alert">
                 {error}
               </p>
             )}

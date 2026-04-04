@@ -7,7 +7,8 @@ import CreateTripPage from './pages/CreateTripPage'
 import TripListPage from './pages/TripListPage'
 import MyTripsPage from './pages/MyTripsPage'
 import TripDetailPage from './pages/TripDetailPage'
-import ActivityPage from './pages/ActivityPage'
+import ChatPage from './pages/ChatPage'
+import ChatThreadPage from './pages/ChatThreadPage'
 import ProfilePage from './pages/ProfilePage'
 import ProfileSectionPage from './pages/ProfileSectionPage'
 import { getStoredUser, isLoggedIn } from './lib/authStorage'
@@ -78,7 +79,8 @@ export default function App() {
         />
         <Route path="/trips/mine" element={<MyTripsPage />} />
         <Route path="/trips/:id" element={<TripDetailPage />} />
-        <Route path="/activity" element={<ActivityPage />} />
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/chat/:conversationId" element={<ChatThreadPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/:section" element={<ProfileSectionPage />} />
       </Route>

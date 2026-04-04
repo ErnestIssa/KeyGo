@@ -1,8 +1,9 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
+import { useChatUnread } from '../../context/ChatUnreadContext'
 import { clearSession, getStoredUser } from '../../lib/authStorage'
 import { useTheme } from '../../theme/ThemeContext'
-import { IconActivity, IconCar, IconHome, IconMyTrips, IconProfile } from './navIcons'
+import { IconCar, IconChat, IconHome, IconMyTrips, IconProfile } from './navIcons'
 
 function isTripDetailPath(pathname: string) {
   return /^\/trips\/(?!new$|available$|mine$)[^/]+$/.test(pathname)
@@ -17,12 +18,14 @@ export function DesktopChrome() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const user = getStoredUser()
+  const { unreadCount } = useChatUnread()
   const { theme, toggleTheme } = useTheme()
   const isOwner = user?.role === 'owner'
 
   const mineSectionActive = pathname === '/trips/mine' || isTripDetailPath(pathname)
   const createActive = isOwner ? pathname === '/trips/new' : pathname === '/trips/available'
   const profileSectionActive = pathname === '/profile' || pathname.startsWith('/profile/')
+  const chatSectionActive = pathname === '/chat' || pathname.startsWith('/chat/')
 
   return (
     <header className="hidden lg:flex shrink-0 flex-col border-b border-[var(--border)] bg-[var(--bg-elevated)]">
@@ -63,9 +66,11 @@ export function DesktopChrome() {
             />
           )}
           <DesktopNavLink
-            to="/activity"
-            label="Activity"
-            icon={<IconActivity className="w-[1.125rem] h-[1.125rem]" />}
+            to="/chat"
+            label="Chat"
+            icon={<IconChat className="w-[1.125rem] h-[1.125rem]" />}
+            alsoActive={chatSectionActive}
+            badgeCount={unreadCount}
           />
           <DesktopNavLink
             to="/profile"
@@ -96,9 +101,6 @@ export function DesktopChrome() {
           </button>
         </div>
       </div>
-      <p className="hidden xl:block text-center text-[11px] text-[var(--text-muted)] pb-2.5 px-8 border-t border-[var(--border)]/50 bg-[var(--bg-subtle)]/25 leading-relaxed">
-        Desktop — full workspace for setup and planning. Use your phone with the bottom bar when you&apos;re on the go.
-      </p>
     </header>
   )
 }
@@ -110,6 +112,7 @@ function DesktopNavLink({
   icon,
   highlight,
   alsoActive,
+  badgeCount,
 }: {
   to: string
   end?: boolean
@@ -117,6 +120,7 @@ function DesktopNavLink({
   icon: ReactNode
   highlight?: boolean
   alsoActive?: boolean
+  badgeCount?: number
 }) {
   return (
     <NavLink
@@ -134,7 +138,14 @@ function DesktopNavLink({
       }}
     >
       <span className="inline-flex items-center gap-2">
-        <span className="opacity-90">{icon}</span>
+        <span className="opacity-90 relative inline-flex">
+          {icon}
+          {badgeCount != null && badgeCount > 0 ? (
+            <span className="absolute -top-1.5 -right-2 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-[var(--accent)] text-white text-[10px] font-bold flex items-center justify-center leading-none shadow-sm">
+              {badgeCount > 99 ? '99+' : badgeCount}
+            </span>
+          ) : null}
+        </span>
         {label}
       </span>
     </NavLink>

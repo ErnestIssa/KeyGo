@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { api } from '../lib/api'
+import { friendlyErrorMessage } from '../lib/userFriendlyError'
 import { setSession } from '../lib/authStorage'
 import { useToast } from '../context/ToastContext'
 import { useTheme } from '../theme/ThemeContext'
@@ -22,7 +23,8 @@ export default function AuthPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [role, setRole] = useState<SignupRole>('owner')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -42,7 +44,7 @@ export default function AuthPage() {
       if (mode === 'signup') {
         const res = await api<AuthSuccess>('/users/register', {
           method: 'POST',
-          body: JSON.stringify({ email, password, name, role }),
+          body: JSON.stringify({ email, password, firstName, lastName, role }),
         })
         finishAuth(res, 'Welcome — your account is ready.')
       } else {
@@ -53,7 +55,7 @@ export default function AuthPage() {
         finishAuth(res, 'Signed in successfully.')
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Something went wrong'
+      const msg = friendlyErrorMessage(err)
       setError(msg)
       toast(msg, 'error')
     } finally {
@@ -71,7 +73,7 @@ export default function AuthPage() {
       })
       finishAuth(res, 'Demo session started.')
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Demo login failed'
+      const msg = friendlyErrorMessage(err)
       setError(msg)
       toast(msg, 'error')
     } finally {
@@ -154,7 +156,20 @@ export default function AuthPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
               <>
-                <Input label="Full name" value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" />
+                <Input
+                  label="First name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  autoComplete="given-name"
+                />
+                <Input
+                  label="Last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                  autoComplete="family-name"
+                />
                 <div className="space-y-1.5">
                   <span className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">
                     I am a
@@ -206,7 +221,7 @@ export default function AuthPage() {
               <motion.p
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-sm font-medium text-[var(--danger)] bg-[var(--danger-soft)] rounded-xl px-3 py-2"
+                className="text-sm text-[var(--text-muted)] border border-[var(--border)] bg-[var(--bg-subtle)] rounded-xl px-3 py-2"
                 role="alert"
               >
                 {error}

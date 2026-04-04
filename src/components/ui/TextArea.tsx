@@ -32,7 +32,7 @@ export function TextArea({
         {...props}
       />
       {hint && !error && <p className="text-xs text-[var(--text-muted)] leading-snug">{hint}</p>}
-      {error && <p className="text-xs font-medium text-[var(--danger)]">{error}</p>}
+      {error && <p className="text-xs font-medium text-[var(--text-muted)]">{error}</p>}
     </div>
   )
 }

@@ -1,8 +1,9 @@
 import { useRef, type MouseEvent } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
+import { useChatUnread } from '../../context/ChatUnreadContext'
 import type { User } from '../../types'
-import { IconActivity, IconHome, IconKeyGoLogo, IconMyTrips, IconProfile } from './navIcons'
+import { IconChat, IconHome, IconKeyGoLogo, IconMyTrips, IconProfile } from './navIcons'
 
 function isTripDetailPath(pathname: string) {
   return /^\/trips\/(?!new$|available$|mine$)[^/]+$/.test(pathname)
@@ -12,9 +13,9 @@ function isTripDetailPath(pathname: string) {
 function getMobileNavSelection(
   pathname: string,
   isOwner: boolean
-): 'home' | 'mine' | 'center' | 'activity' | 'profile' | null {
+): 'home' | 'mine' | 'center' | 'chat' | 'profile' | null {
   if (pathname === '/home') return 'home'
-  if (pathname === '/activity') return 'activity'
+  if (pathname === '/chat' || pathname.startsWith('/chat/')) return 'chat'
   if (pathname === '/profile' || pathname.startsWith('/profile/')) return 'profile'
   if (isOwner ? pathname === '/trips/new' : pathname === '/trips/available') return 'center'
   if (pathname === '/trips/mine' || isTripDetailPath(pathname)) return 'mine'
@@ -35,6 +36,7 @@ type Props = {
 
 export function MobileBottomNav({ user }: Props) {
   const { pathname } = useLocation()
+  const { unreadCount } = useChatUnread()
   const reduceMotion = useReducedMotion()
   const navInteractionLockRef = useRef(false)
 
@@ -58,7 +60,7 @@ export function MobileBottomNav({ user }: Props) {
   const homeActive = navSel === 'home'
   const mineActive = navSel === 'mine'
   const centerActive = navSel === 'center'
-  const activityActive = navSel === 'activity'
+  const chatActive = navSel === 'chat'
   const profileActive = navSel === 'profile'
 
   /** Match native tab highlight + scene fade (~640ms) */
@@ -143,16 +145,24 @@ export function MobileBottomNav({ user }: Props) {
         </div>
 
         <NavLink
-          to="/activity"
+          to="/chat"
           onClick={onNavLinkClick}
-          className={tabClass(activityActive)}
-          aria-current={activityActive ? 'page' : undefined}
+          className={tabClass(chatActive)}
+          aria-current={chatActive ? 'page' : undefined}
         >
-          <motion.span className="inline-flex text-current" whileTap={reduceMotion ? {} : { scale: 0.96, transition: tapTransition }}>
-            <IconActivity className={iconClass} />
+          <motion.span className="inline-flex text-current relative" whileTap={reduceMotion ? {} : { scale: 0.96, transition: tapTransition }}>
+            <IconChat className={iconClass} />
+            {unreadCount > 0 ? (
+              <span
+                className="absolute -top-0.5 -right-0.5 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-[var(--accent)] text-white text-[10px] font-bold flex items-center justify-center leading-none shadow-sm"
+                aria-hidden
+              >
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            ) : null}
           </motion.span>
           <span className="truncate max-w-full text-center leading-tight px-0.5 text-[10px] sm:text-[11px] font-semibold">
-            Activity
+            Chat
           </span>
         </NavLink>
 

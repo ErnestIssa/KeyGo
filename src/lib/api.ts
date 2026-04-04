@@ -158,7 +158,10 @@ export async function postChatMessage(conversationId: string, text: string) {
 }
 
 export async function listChatMessages(conversationId: string) {
-  return api<{ messages: ChatMessage[] }>(`/messages/${encodeURIComponent(conversationId)}`, { method: 'GET' })
+  return api<{ messages: ChatMessage[]; peerLastReadAt?: string | null }>(
+    `/messages/${encodeURIComponent(conversationId)}`,
+    { method: 'GET' },
+  )
 }
 
 export async function markConversationRead(conversationId: string) {

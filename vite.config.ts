@@ -20,6 +20,11 @@ export default defineConfig(({ mode }) => {
           target: proxyTarget,
           changeOrigin: true,
         },
+        '/socket.io': {
+          target: proxyTarget,
+          changeOrigin: true,
+          ws: true,
+        },
       },
     },
     preview: {
@@ -34,6 +39,11 @@ export default defineConfig(({ mode }) => {
         '/uploads': {
           target: proxyTarget,
           changeOrigin: true,
+        },
+        '/socket.io': {
+          target: proxyTarget,
+          changeOrigin: true,
+          ws: true,
         },
       },
     },

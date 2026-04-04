@@ -1,14 +1,36 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { io, type Socket } from 'socket.io-client'
 import { useChatUnread } from '../context/ChatUnreadContext'
 import { listChatMessages, markConversationRead, postChatMessage, type ChatMessage } from '../lib/api'
+import { outgoingDeliveryStatus } from '../lib/chatDelivery'
+import { getApiOrigin } from '../lib/apiOrigin'
 import { friendlyErrorMessage } from '../lib/userFriendlyError'
-import { getStoredUser } from '../lib/authStorage'
+import { getStoredUser, getToken } from '../lib/authStorage'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { ChatAvatar } from '../components/chat/ChatAvatar'
 
-const POLL_MS = 4000
+function socketOrigin(): string {
+  const o = getApiOrigin()
+  if (o) return o
+  if (typeof window !== 'undefined') return window.location.origin
+  return ''
+}
+
+function normalizeMessage(m: ChatMessage): ChatMessage {
+  const createdAt =
+    typeof m.createdAt === 'string'
+      ? m.createdAt
+      : (m.createdAt as unknown) instanceof Date
+        ? ((m.createdAt as unknown) as Date).toISOString()
+        : String(m.createdAt)
+  return { ...m, createdAt }
+}
+
+const TYPING_EMIT_MS = 400
+const TYPING_STOP_MS = 2800
+const GROUP_WINDOW_MS = 5 * 60 * 1000
 
 export default function ChatThreadPage() {
   const { conversationId } = useParams<{ conversationId: string }>()
@@ -26,8 +48,15 @@ export default function ChatThreadPage() {
   const user = getStoredUser()
   const { refreshUnread } = useChatUnread()
   const listRef = useRef<HTMLDivElement>(null)
+  const socketRef = useRef<Socket | null>(null)
+  const myIdRef = useRef('')
+  const typingEmitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const typingStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const peerTypingStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null)
+  const [peerTyping, setPeerTyping] = useState(false)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -38,6 +67,7 @@ export default function ChatThreadPage() {
     try {
       const res = await listChatMessages(conversationId)
       setMessages(res.messages)
+      setPeerLastReadAt(res.peerLastReadAt ?? null)
       setError(null)
     } catch (e) {
       setError(friendlyErrorMessage(e))
@@ -57,22 +87,123 @@ export default function ChatThreadPage() {
 
   useEffect(() => {
     if (!conversationId) return
-    const id = setInterval(() => void loadMessages(), POLL_MS)
-    return () => clearInterval(id)
-  }, [conversationId, loadMessages])
+    const token = getToken()
+    const origin = socketOrigin()
+    if (!token || !origin) return
+
+    const socket = io(origin, {
+      path: '/socket.io/',
+      auth: { token },
+      transports: ['websocket', 'polling'],
+    })
+    socketRef.current = socket
+
+    const joinRoom = () => {
+      socket.emit('join_conversation', conversationId)
+      socket.emit('messages_read', { conversationId })
+    }
+    if (socket.connected) joinRoom()
+    else socket.on('connect', joinRoom)
+
+    socket.on('new_message', (payload: { message: ChatMessage }) => {
+      const raw = payload?.message
+      if (!raw) return
+      const m = normalizeMessage(raw)
+      if (m.senderId !== myIdRef.current) {
+        m.isUnread = true
+      }
+      setMessages((prev) => {
+        if (prev.some((x) => x.id === m.id)) return prev
+        return [...prev, m]
+      })
+      if (m.senderId !== myIdRef.current) {
+        void markConversationRead(conversationId).then(() => {
+          void refreshUnread()
+          socket.emit('messages_read', { conversationId })
+          setMessages((prev) =>
+            prev.map((x) => (x.senderId !== myIdRef.current ? { ...x, isUnread: false } : x)),
+          )
+        })
+      }
+    })
+
+    socket.on(
+      'messages_read',
+      (payload: { conversationId?: string; readerId?: string; readAt?: string }) => {
+        if (!payload || payload.conversationId !== conversationId) return
+        if (payload.readerId === myIdRef.current) return
+        const readAt = payload.readAt
+        if (!readAt) return
+        setPeerLastReadAt((prev) => {
+          if (!prev) return readAt
+          return new Date(readAt) > new Date(prev) ? readAt : prev
+        })
+      },
+    )
+
+    socket.on(
+      'user_typing',
+      (payload: { conversationId?: string; userId?: string; isTyping?: boolean }) => {
+        if (!payload || payload.conversationId !== conversationId) return
+        if (payload.userId === myIdRef.current) return
+        const typing = Boolean(payload.isTyping)
+        if (peerTypingStopTimerRef.current) clearTimeout(peerTypingStopTimerRef.current)
+        setPeerTyping(typing)
+        if (typing) {
+          peerTypingStopTimerRef.current = setTimeout(() => setPeerTyping(false), 6000)
+        }
+      },
+    )
+
+    return () => {
+      socket.emit('typing', { conversationId, isTyping: false })
+      socket.emit('leave_conversation', conversationId)
+      socket.removeAllListeners()
+      socket.disconnect()
+      socketRef.current = null
+      if (typingEmitTimerRef.current) clearTimeout(typingEmitTimerRef.current)
+      if (typingStopTimerRef.current) clearTimeout(typingStopTimerRef.current)
+      if (peerTypingStopTimerRef.current) clearTimeout(peerTypingStopTimerRef.current)
+    }
+  }, [conversationId, refreshUnread])
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages.length])
+  }, [messages.length, peerTyping])
 
-  const send = async () => {
-    const text = input.trim()
-    if (!text || !conversationId || sending) return
+  const flushTypingEmit = useCallback(() => {
+    const socket = socketRef.current
+    if (!socket?.connected) return
+    socket.emit('typing', { conversationId, isTyping: true })
+    if (typingStopTimerRef.current) clearTimeout(typingStopTimerRef.current)
+    typingStopTimerRef.current = setTimeout(() => {
+      socket.emit('typing', { conversationId, isTyping: false })
+    }, TYPING_STOP_MS)
+  }, [conversationId])
+
+  const onInputChange = useCallback(
+    (text: string) => {
+      setInput(text)
+      if (!text.trim()) {
+        if (typingEmitTimerRef.current) clearTimeout(typingEmitTimerRef.current)
+        if (typingStopTimerRef.current) clearTimeout(typingStopTimerRef.current)
+        socketRef.current?.emit('typing', { conversationId, isTyping: false })
+        return
+      }
+      if (typingEmitTimerRef.current) clearTimeout(typingEmitTimerRef.current)
+      typingEmitTimerRef.current = setTimeout(() => {
+        flushTypingEmit()
+      }, TYPING_EMIT_MS)
+    },
+    [conversationId, flushTypingEmit],
+  )
+
+  const sendViaRest = async (text: string) => {
+    if (!conversationId) return
     setSending(true)
-    setInput('')
     try {
       const res = await postChatMessage(conversationId, text)
-      setMessages((prev) => [...prev, res.message])
+      setMessages((prev) => (prev.some((x) => x.id === res.message.id) ? prev : [...prev, res.message]))
     } catch (e) {
       setError(friendlyErrorMessage(e))
       setInput(text)
@@ -81,8 +212,46 @@ export default function ChatThreadPage() {
     }
   }
 
+  const send = async () => {
+    const text = input.trim()
+    if (!text || !conversationId || sending) return
+    setSending(true)
+    setInput('')
+    socketRef.current?.emit('typing', { conversationId, isTyping: false })
+
+    const socket = socketRef.current
+    if (socket?.connected) {
+      const t = setTimeout(() => setSending(false), 12000)
+      socket.emit(
+        'send_message',
+        { conversationId, text },
+        (ack: { ok: true } | { ok: false; error?: string } | undefined) => {
+          clearTimeout(t)
+          setSending(false)
+          if (ack && 'ok' in ack && ack.ok === false) {
+            void sendViaRest(text)
+          }
+        },
+      )
+      return
+    }
+
+    await sendViaRest(text)
+  }
+
   const myId = user?.id ?? ''
+  myIdRef.current = myId
   const title = state?.peerDisplayName ?? state?.otherUserName ?? 'Chat'
+  const peerLabel = state?.peerDisplayName ?? state?.otherUserName ?? state?.peerName ?? 'Driver'
+
+  const onScroll = () => {
+    const el = listRef.current
+    if (!el || !conversationId) return
+    const { scrollTop, scrollHeight, clientHeight } = el
+    if (scrollHeight - scrollTop - clientHeight < 80) {
+      socketRef.current?.emit('messages_read', { conversationId })
+    }
+  }
 
   if (!conversationId) {
     return (
@@ -127,27 +296,46 @@ export default function ChatThreadPage() {
       ) : (
         <div
           ref={listRef}
+          onScroll={onScroll}
           className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1 max-h-[min(60vh,520px)]"
         >
           {messages.length === 0 ? (
             <p className="text-center text-[var(--text-muted)] text-sm py-8">No messages yet. Say hello!</p>
           ) : null}
-          {messages.map((m) => {
+          {messages.map((m, index) => {
             const mine = m.senderId === myId
             const inboundUnread = !mine && m.isUnread
-            const ds = m.deliveryStatus
+            const prev = index > 0 ? messages[index - 1] : undefined
+            const prevTime = prev ? new Date(prev.createdAt).getTime() : 0
+            const curTime = new Date(m.createdAt).getTime()
+            const sameGroup =
+              prev &&
+              prev.senderId === m.senderId &&
+              !Number.isNaN(prevTime) &&
+              !Number.isNaN(curTime) &&
+              curTime - prevTime < GROUP_WINDOW_MS
+            const showMeta = !sameGroup
+
+            const ds = mine ? outgoingDeliveryStatus(m.createdAt, peerLastReadAt) : m.deliveryStatus
             const deliveryLabel =
               ds === 'read' ? 'Read' : ds === 'delivered' ? 'Delivered' : ds === 'sent' ? 'Sent' : ''
             const deliveryClass =
               ds === 'read' ? 'text-green-200' : ds === 'delivered' ? 'text-blue-200' : ds === 'sent' ? 'text-pink-200' : ''
             return (
-              <div key={m.id} className={`flex items-end gap-2 ${mine ? 'justify-end' : 'justify-start'}`}>
+              <div
+                key={m.id}
+                className={`flex items-end gap-2 ${mine ? 'justify-end' : 'justify-start'} ${sameGroup ? 'mt-1' : 'mt-3'}`}
+              >
                 {!mine ? (
-                  <ChatAvatar
-                    name={m.senderName ?? m.senderDisplayName ?? '?'}
-                    avatarUrl={m.senderAvatarUrl}
-                    size={28}
-                  />
+                  sameGroup ? (
+                    <div className="w-7 shrink-0" aria-hidden />
+                  ) : (
+                    <ChatAvatar
+                      name={m.senderName ?? m.senderDisplayName ?? '?'}
+                      avatarUrl={m.senderAvatarUrl}
+                      size={28}
+                    />
+                  )
                 ) : null}
                 <Card
                   className={`max-w-[85%] p-3 rounded-2xl ${
@@ -161,26 +349,36 @@ export default function ChatThreadPage() {
                   <p className={`text-sm leading-relaxed whitespace-pre-wrap ${mine ? 'text-white' : 'text-[var(--text)]'}`}>
                     {m.text}
                   </p>
-                  <div className={`text-[11px] mt-1 flex flex-wrap items-center gap-x-2 ${mine ? 'text-white/75' : 'text-[var(--text-muted)]'}`}>
-                    <span>
-                      {new Date(m.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    {mine && deliveryLabel ? (
+                  {showMeta ? (
+                    <div className={`text-[11px] mt-1 flex flex-wrap items-center gap-x-2 ${mine ? 'text-white/75' : 'text-[var(--text-muted)]'}`}>
+                      <span>
+                        {new Date(m.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {mine && deliveryLabel ? (
+                        <span className={`font-semibold ${deliveryClass}`}>{deliveryLabel}</span>
+                      ) : null}
+                      {!mine && inboundUnread ? (
+                        <span className="font-semibold text-[var(--brand)]">New</span>
+                      ) : null}
+                    </div>
+                  ) : mine && deliveryLabel ? (
+                    <div className="text-[11px] mt-1 flex justify-end">
                       <span className={`font-semibold ${deliveryClass}`}>{deliveryLabel}</span>
-                    ) : null}
-                    {!mine && inboundUnread ? (
-                      <span className="font-semibold text-[var(--brand)]">New</span>
-                    ) : null}
-                  </div>
+                    </div>
+                  ) : null}
                 </Card>
                 {mine ? (
-                  <ChatAvatar
-                    name={user?.name ?? '?'}
-                    firstName={user?.firstName}
-                    lastName={user?.lastName}
-                    avatarUrl={user?.avatarUrl}
-                    size={28}
-                  />
+                  sameGroup ? (
+                    <div className="w-7 shrink-0" aria-hidden />
+                  ) : (
+                    <ChatAvatar
+                      name={user?.name ?? '?'}
+                      firstName={user?.firstName}
+                      lastName={user?.lastName}
+                      avatarUrl={user?.avatarUrl}
+                      size={28}
+                    />
+                  )
                 ) : null}
               </div>
             )
@@ -190,10 +388,14 @@ export default function ChatThreadPage() {
 
       {error ? <p className="text-sm text-[var(--text-muted)] mb-2">{error}</p> : null}
 
+      {peerTyping ? (
+        <p className="text-[13px] text-[var(--text-muted)] italic px-1 mb-2">{peerLabel} is typing…</p>
+      ) : null}
+
       <div className="flex gap-2 items-end sticky bottom-0 pb-2 bg-[var(--bg-page)] pt-2 border-t border-[var(--border)]">
         <textarea
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => onInputChange(e.target.value)}
           placeholder="Message…"
           rows={2}
           maxLength={4000}

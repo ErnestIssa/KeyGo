@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useChatUnread } from '../context/ChatUnreadContext'
 import { useSyncGlobalLoading } from '../context/LoadingOverlayContext'
 import {
@@ -66,6 +66,11 @@ export default function ChatPage() {
   const [error, setError] = useState<string | null>(null)
   const [startingId, setStartingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [activityOpen, setActivityOpen] = useState(true)
+  const [peopleOpen, setPeopleOpen] = useState(false)
+
+  const panelEase = [0.22, 1, 0.36, 1] as const
+  const panelDuration = 0.58
 
   useSyncGlobalLoading(loading)
 
@@ -188,59 +193,105 @@ export default function ChatPage() {
       ) : null}
 
       {!loading && activities.length > 0 ? (
-        <details open className="max-w-3xl rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 group">
-          <summary className="cursor-pointer list-none font-semibold text-[var(--text)] flex items-center justify-between gap-2">
+        <div className="max-w-3xl rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setActivityOpen((o) => !o)}
+            className="w-full flex items-center justify-between gap-2 text-left font-semibold text-[var(--text)] min-h-[44px]"
+          >
             Recent activity
-            <span className="text-xs text-[var(--text-muted)] group-open:rotate-0 transition">▼</span>
-          </summary>
-          <div className="mt-4 space-y-4 border-t border-[var(--border)] pt-4">
-            {activities.map((row) => (
-              <div key={row.id} className="border-b border-[var(--border)] pb-4 last:border-0 last:pb-0">
-                <p className="text-xs text-[var(--text-muted)]">{formatShortTime(row.at)}</p>
-                <p className="font-semibold text-[var(--text)] mt-1">{row.summary}</p>
-                <p className="text-sm text-[var(--text-muted)] mt-1">{row.who}</p>
-              </div>
-            ))}
-          </div>
-        </details>
+            <motion.span
+              className="text-xs text-[var(--text-muted)] inline-block"
+              animate={{ rotate: activityOpen ? 180 : 0 }}
+              transition={{ duration: panelDuration, ease: panelEase }}
+            >
+              ▼
+            </motion.span>
+          </button>
+          <AnimatePresence initial={false}>
+            {activityOpen ? (
+              <motion.div
+                key="activity"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: panelDuration, ease: panelEase }}
+                className="overflow-hidden"
+              >
+                <div className="mt-4 space-y-4 border-t border-[var(--border)] pt-4">
+                  {activities.map((row) => (
+                    <div key={row.id} className="border-b border-[var(--border)] pb-4 last:border-0 last:pb-0">
+                      <p className="text-xs text-[var(--text-muted)]">{formatShortTime(row.at)}</p>
+                      <p className="font-semibold text-[var(--text)] mt-1">{row.summary}</p>
+                      <p className="text-sm text-[var(--text-muted)] mt-1">{row.who}</p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </div>
       ) : null}
 
       {!loading && safeMatches.length > 0 ? (
-        <details className="max-w-3xl rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 group">
-          <summary className="cursor-pointer list-none font-semibold text-[var(--text)] flex items-center justify-between gap-2">
+        <div className="max-w-3xl rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setPeopleOpen((o) => !o)}
+            className="w-full flex items-center justify-between gap-2 text-left font-semibold text-[var(--text)] min-h-[44px]"
+          >
             People you can message
-            <span className="text-xs text-[var(--text-muted)]">▼</span>
-          </summary>
-          <div className="mt-4 space-y-3 border-t border-[var(--border)] pt-4 grid gap-3">
-            {safeMatches.map((m) => (
-              <Card key={m.user.id} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="min-w-0 flex items-center gap-3">
-                  <ChatAvatar name={m.user.name} avatarUrl={m.user.avatarUrl} size={40} />
-                  <div className="min-w-0">
-                  <p className="font-semibold text-[var(--text)] truncate">{m.user.displayName ?? m.user.name}</p>
-                  <p className="text-sm text-[var(--text-muted)]">
-                    {m.conversationId ? 'Continue your conversation' : 'Matched on a trip'}
-                  </p>
-                  </div>
+            <motion.span
+              className="text-xs text-[var(--text-muted)] inline-block"
+              animate={{ rotate: peopleOpen ? 180 : 0 }}
+              transition={{ duration: panelDuration, ease: panelEase }}
+            >
+              ▼
+            </motion.span>
+          </button>
+          <AnimatePresence initial={false}>
+            {peopleOpen ? (
+              <motion.div
+                key="people"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: panelDuration, ease: panelEase }}
+                className="overflow-hidden"
+              >
+                <div className="mt-4 space-y-3 border-t border-[var(--border)] pt-4 grid gap-3">
+                  {safeMatches.map((m) => (
+                    <Card key={m.user.id} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="min-w-0 flex items-center gap-3">
+                        <ChatAvatar name={m.user.name} avatarUrl={m.user.avatarUrl} size={40} />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-[var(--text)] truncate">{m.user.displayName ?? m.user.name}</p>
+                          <p className="text-sm text-[var(--text-muted)]">
+                            {m.conversationId ? 'Continue your conversation' : 'Matched on a trip'}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        disabled={startingId === m.user.id}
+                        onClick={() =>
+                          void startOrOpenChat(
+                            m.user.id,
+                            { name: m.user.name, displayName: m.user.displayName, avatarUrl: m.user.avatarUrl },
+                            m.conversationId,
+                          )
+                        }
+                      >
+                        {startingId === m.user.id ? '…' : m.conversationId ? 'Open' : 'Message'}
+                      </Button>
+                    </Card>
+                  ))}
                 </div>
-                <Button
-                  type="button"
-                  variant="primary"
-                  disabled={startingId === m.user.id}
-                  onClick={() =>
-                    void startOrOpenChat(
-                      m.user.id,
-                      { name: m.user.name, displayName: m.user.displayName, avatarUrl: m.user.avatarUrl },
-                      m.conversationId,
-                    )
-                  }
-                >
-                  {startingId === m.user.id ? '…' : m.conversationId ? 'Open' : 'Message'}
-                </Button>
-              </Card>
-            ))}
-          </div>
-        </details>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </div>
       ) : null}
 
       {!loading && safeConversations.length > 0 ? (

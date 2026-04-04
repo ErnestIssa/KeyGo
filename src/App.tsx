@@ -11,6 +11,7 @@ import ChatPage from './pages/ChatPage'
 import ChatThreadPage from './pages/ChatThreadPage'
 import ProfilePage from './pages/ProfilePage'
 import ProfileSectionPage from './pages/ProfileSectionPage'
+import UserProfilePage from './pages/UserProfilePage'
 import { getStoredUser, isLoggedIn } from './lib/authStorage'
 import type { UserRole } from './types'
 
@@ -81,6 +82,7 @@ export default function App() {
         <Route path="/trips/:id" element={<TripDetailPage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/chat/:conversationId" element={<ChatThreadPage />} />
+        <Route path="/profile/user/:userId" element={<UserProfilePage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/:section" element={<ProfileSectionPage />} />
       </Route>

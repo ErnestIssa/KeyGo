@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useChatUnread } from '../context/ChatUnreadContext'
 import { useSyncGlobalLoading } from '../context/LoadingOverlayContext'
 import {
   createConversation,
+  deleteConversation,
   listChatMatches,
   listChatRecentTrips,
   listConversations,
-  type ChatRecentTripRow,
+  type ChatActivityLogRow,
   type ConversationListItem,
 } from '../lib/api'
 import { getStoredUser } from '../lib/authStorage'
@@ -22,17 +24,48 @@ const statusLabel: Record<string, string> = {
   completed: 'Done',
 }
 
+function formatShortTime(iso?: string) {
+  if (!iso) return ''
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return ''
+  }
+}
+
+function lastStatusLabel(status: ConversationListItem['lastMessageStatus']) {
+  switch (status) {
+    case 'sent':
+      return { text: 'Sent', className: 'text-[#ec4899]' }
+    case 'delivered':
+      return { text: 'Delivered', className: 'text-[#3b82f6]' }
+    case 'read':
+      return { text: 'Read', className: 'text-[#22c55e]' }
+    case 'received':
+      return { text: 'New', className: 'text-[#ec4899]' }
+    default:
+      return { text: '', className: 'text-[var(--text-muted)]' }
+  }
+}
+
 export default function ChatPage() {
   const navigate = useNavigate()
+  const { refreshUnread } = useChatUnread()
   const me = getStoredUser()
   const [conversations, setConversations] = useState<ConversationListItem[]>([])
   const [matches, setMatches] = useState<
     { user: { id: string; name: string; displayName?: string; avatarUrl?: string }; conversationId: string | null }[]
   >([])
-  const [recentTrips, setRecentTrips] = useState<ChatRecentTripRow[]>([])
+  const [activities, setActivities] = useState<ChatActivityLogRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [startingId, setStartingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useSyncGlobalLoading(loading)
 
@@ -48,7 +81,17 @@ export default function ChatPage() {
         if (!c) {
           setConversations(convRes.conversations)
           setMatches(matchRes.matches)
-          setRecentTrips(tripRes.trips)
+          setActivities(
+            tripRes.activities?.length
+              ? tripRes.activities
+              : tripRes.trips.map((trip) => ({
+                  id: `${trip.id}-fb`,
+                  tripId: trip.id,
+                  at: trip.updatedAt ?? trip.createdAt,
+                  who: [trip.owner?.name, trip.driver?.name].filter(Boolean).join(' & ') || 'Trip',
+                  summary: `${statusLabel[trip.status] ?? trip.status} · ${trip.pickupLocation} → ${trip.dropoffLocation}`,
+                })),
+          )
         }
       } catch (e) {
         if (!c) setError(friendlyErrorMessage(e))
@@ -66,10 +109,11 @@ export default function ChatPage() {
 
   const openThread = (
     conversationId: string,
-    peer: { name: string; displayName?: string; avatarUrl?: string },
+    peer: { id: string; name: string; displayName?: string; avatarUrl?: string },
   ) => {
     navigate(`/chat/${encodeURIComponent(conversationId)}`, {
       state: {
+        peerUserId: peer.id,
         peerDisplayName: peer.displayName ?? peer.name,
         peerAvatarUrl: peer.avatarUrl,
         peerName: peer.name,
@@ -87,17 +131,41 @@ export default function ChatPage() {
       return
     }
     if (existingId) {
-      openThread(existingId, peer)
+      openThread(existingId, {
+        id: participantId,
+        name: peer.name,
+        displayName: peer.displayName,
+        avatarUrl: peer.avatarUrl,
+      })
       return
     }
     setStartingId(participantId)
     try {
       const res = await createConversation(participantId)
-      openThread(res.conversation.id, peer)
+      openThread(res.conversation.id, {
+        id: participantId,
+        name: peer.name,
+        displayName: peer.displayName,
+        avatarUrl: peer.avatarUrl,
+      })
     } catch (e) {
       setError(friendlyErrorMessage(e))
     } finally {
       setStartingId(null)
+    }
+  }
+
+  const removeConversation = async (id: string) => {
+    if (!window.confirm('Delete this conversation and its messages for both of you?')) return
+    setDeletingId(id)
+    try {
+      await deleteConversation(id)
+      setConversations((prev) => prev.filter((c) => c.id !== id))
+      void refreshUnread()
+    } catch (e) {
+      setError(friendlyErrorMessage(e))
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -119,33 +187,31 @@ export default function ChatPage() {
         </Card>
       ) : null}
 
-      {!loading && recentTrips.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">Recent activity</h2>
-          <div className="grid gap-3 max-w-3xl">
-            {recentTrips.slice(0, 8).map((trip) => (
-              <Card key={trip.id} className="p-4">
-                <p className="font-semibold text-[var(--text)] truncate">
-                  {trip.pickupLocation} → {trip.dropoffLocation}
-                </p>
-                <p className="text-sm text-[var(--text-muted)] mt-1">
-                  {statusLabel[trip.status] ?? trip.status}
-                  {trip.owner?.name || trip.driver?.name
-                    ? ` · ${trip.owner?.name ?? '?'} & ${trip.driver?.name ?? '?'}`
-                    : ''}
-                </p>
-              </Card>
+      {!loading && activities.length > 0 ? (
+        <details open className="max-w-3xl rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 group">
+          <summary className="cursor-pointer list-none font-semibold text-[var(--text)] flex items-center justify-between gap-2">
+            Recent activity
+            <span className="text-xs text-[var(--text-muted)] group-open:rotate-0 transition">▼</span>
+          </summary>
+          <div className="mt-4 space-y-4 border-t border-[var(--border)] pt-4">
+            {activities.map((row) => (
+              <div key={row.id} className="border-b border-[var(--border)] pb-4 last:border-0 last:pb-0">
+                <p className="text-xs text-[var(--text-muted)]">{formatShortTime(row.at)}</p>
+                <p className="font-semibold text-[var(--text)] mt-1">{row.summary}</p>
+                <p className="text-sm text-[var(--text-muted)] mt-1">{row.who}</p>
+              </div>
             ))}
           </div>
-        </section>
+        </details>
       ) : null}
 
       {!loading && safeMatches.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+        <details className="max-w-3xl rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 group">
+          <summary className="cursor-pointer list-none font-semibold text-[var(--text)] flex items-center justify-between gap-2">
             People you can message
-          </h2>
-          <div className="grid gap-3 max-w-3xl">
+            <span className="text-xs text-[var(--text-muted)]">▼</span>
+          </summary>
+          <div className="mt-4 space-y-3 border-t border-[var(--border)] pt-4 grid gap-3">
             {safeMatches.map((m) => (
               <Card key={m.user.id} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="min-w-0 flex items-center gap-3">
@@ -174,37 +240,63 @@ export default function ChatPage() {
               </Card>
             ))}
           </div>
-        </section>
+        </details>
       ) : null}
 
       {!loading && safeConversations.length > 0 ? (
         <section className="space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">Conversations</h2>
           <div className="grid gap-3 max-w-3xl">
-            {safeConversations.map((c) => (
-              <Link
-                key={c.id}
-                to={`/chat/${encodeURIComponent(c.id)}`}
-                state={{
-                  peerDisplayName: c.otherUser.displayName ?? c.otherUser.name,
-                  peerAvatarUrl: c.otherUser.avatarUrl,
-                  peerName: c.otherUser.name,
-                  otherUserName: c.otherUser.name,
-                }}
-              >
-                <Card className="p-4 hover:bg-[var(--bg-subtle)] transition-colors flex items-start gap-3">
-                  <ChatAvatar name={c.otherUser.name} avatarUrl={c.otherUser.avatarUrl} size={40} />
-                  <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-[var(--text)]">{c.otherUser.displayName ?? c.otherUser.name}</p>
-                  {c.lastMessagePreview ? (
-                    <p className="text-sm text-[var(--text-muted)] mt-1 line-clamp-2">{c.lastMessagePreview}</p>
-                  ) : (
-                    <p className="text-sm text-[var(--text-muted)] mt-1">No messages yet</p>
-                  )}
-                  </div>
-                </Card>
-              </Link>
-            ))}
+            {safeConversations.map((c) => {
+              const st = lastStatusLabel(c.lastMessageStatus)
+              return (
+                <div key={c.id} className="relative">
+                  <Link
+                    to={`/chat/${encodeURIComponent(c.id)}`}
+                    state={{
+                      peerUserId: c.otherUserId,
+                      peerDisplayName: c.otherUser.displayName ?? c.otherUser.name,
+                      peerAvatarUrl: c.otherUser.avatarUrl,
+                      peerName: c.otherUser.name,
+                      otherUserName: c.otherUser.name,
+                    }}
+                  >
+                    <Card className="p-4 hover:bg-[var(--bg-subtle)] transition-colors flex items-start gap-3 pr-14">
+                      <ChatAvatar name={c.otherUser.name} avatarUrl={c.otherUser.avatarUrl} size={40} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-semibold text-[var(--text)] truncate">
+                            {c.otherUser.displayName ?? c.otherUser.name}
+                          </p>
+                          {c.lastMessageAt ? (
+                            <span className="text-[11px] text-[var(--text-muted)] shrink-0">
+                              {formatShortTime(c.lastMessageAt)}
+                            </span>
+                          ) : null}
+                        </div>
+                        {st.text ? (
+                          <p className={`text-[11px] font-semibold mt-0.5 ${st.className}`}>{st.text}</p>
+                        ) : null}
+                        {c.lastMessagePreview ? (
+                          <p className="text-sm text-[var(--text-muted)] mt-1 line-clamp-2">{c.lastMessagePreview}</p>
+                        ) : (
+                          <p className="text-sm text-[var(--text-muted)] mt-1">No messages yet</p>
+                        )}
+                      </div>
+                    </Card>
+                  </Link>
+                  <button
+                    type="button"
+                    aria-label="Delete conversation"
+                    disabled={deletingId === c.id}
+                    onClick={() => void removeConversation(c.id)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-red-600 hover:bg-red-500/10 text-lg leading-none"
+                  >
+                    {deletingId === c.id ? '…' : '🗑'}
+                  </button>
+                </div>
+              )
+            })}
           </div>
         </section>
       ) : null}

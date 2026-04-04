@@ -9,6 +9,11 @@ function isTripDetailPath(pathname: string) {
   return /^\/trips\/(?!new$|available$|mine$)[^/]+$/.test(pathname)
 }
 
+/** Open chat thread (not the hub) — hide bottom nav so it doesn’t cover the composer. */
+function isChatThreadPath(pathname: string) {
+  return /^\/chat\/[^/]+$/.test(pathname)
+}
+
 /** Exactly one tab can be active; order avoids overlapping matches. */
 function getMobileNavSelection(
   pathname: string,
@@ -62,6 +67,7 @@ export function MobileBottomNav({ user }: Props) {
   const centerActive = navSel === 'center'
   const chatActive = navSel === 'chat'
   const profileActive = navSel === 'profile'
+  const hideBar = isChatThreadPath(pathname)
 
   /** Match native tab highlight + scene fade (~640ms) */
   const navEase = 'duration-[640ms] ease-[cubic-bezier(0.22,1,0.36,1)]'
@@ -79,13 +85,17 @@ export function MobileBottomNav({ user }: Props) {
   const iconClass = 'w-7 h-7 sm:w-8 sm:h-8 shrink-0'
 
   return (
-    <div
-      className="lg:hidden fixed inset-x-0 bottom-0 z-[60] pointer-events-none flex justify-center px-3"
+    <motion.div
+      className="lg:hidden fixed inset-x-0 bottom-0 z-[60] flex justify-center px-3 pointer-events-none"
       style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      initial={false}
+      animate={hideBar ? { opacity: 0, y: 28 } : { opacity: 1, y: 0 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
     >
       <nav
-        className="pointer-events-auto w-full max-w-[min(100%,calc(100vw-1.5rem))] rounded-[1.75rem] border border-[var(--border)] bg-[var(--bg-elevated)]/85 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.38)]"
+        className={`w-full max-w-[min(100%,calc(100vw-1.5rem))] rounded-[1.75rem] border border-[var(--border)] bg-[var(--bg-elevated)]/85 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.38)] ${hideBar ? 'pointer-events-none' : 'pointer-events-auto'}`}
         aria-label="Main navigation"
+        aria-hidden={hideBar}
       >
       <div className="flex w-full items-end justify-between px-3 pt-1.5 pb-2">
         <NavLink
@@ -181,6 +191,6 @@ export function MobileBottomNav({ user }: Props) {
         </NavLink>
       </div>
       </nav>
-    </div>
+    </motion.div>
   )
 }

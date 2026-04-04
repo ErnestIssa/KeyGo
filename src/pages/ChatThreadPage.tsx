@@ -16,6 +16,7 @@ export default function ChatThreadPage() {
   const location = useLocation()
   const state = location.state as
     | {
+        peerUserId?: string
         otherUserName?: string
         peerDisplayName?: string
         peerAvatarUrl?: string
@@ -104,14 +105,20 @@ export default function ChatThreadPage() {
         >
           ← Back
         </button>
-        <div className="flex items-center gap-2 flex-1 min-w-0 justify-center">
+        <Link
+          to={state?.peerUserId ? `/profile/user/${encodeURIComponent(state.peerUserId)}` : '#'}
+          className={`flex items-center gap-2 flex-1 min-w-0 justify-center min-h-[44px] ${state?.peerUserId ? 'hover:opacity-90' : 'pointer-events-none'}`}
+          onClick={(e) => {
+            if (!state?.peerUserId) e.preventDefault()
+          }}
+        >
           <ChatAvatar
             name={state?.peerName ?? state?.otherUserName ?? '?'}
             avatarUrl={state?.peerAvatarUrl}
             size={32}
           />
           <h1 className="text-lg font-bold text-[var(--text)] truncate">{title}</h1>
-        </div>
+        </Link>
         <div className="w-14 shrink-0" aria-hidden />
       </div>
 
@@ -127,6 +134,12 @@ export default function ChatThreadPage() {
           ) : null}
           {messages.map((m) => {
             const mine = m.senderId === myId
+            const inboundUnread = !mine && m.isUnread
+            const ds = m.deliveryStatus
+            const deliveryLabel =
+              ds === 'read' ? 'Read' : ds === 'delivered' ? 'Delivered' : ds === 'sent' ? 'Sent' : ''
+            const deliveryClass =
+              ds === 'read' ? 'text-green-200' : ds === 'delivered' ? 'text-blue-200' : ds === 'sent' ? 'text-pink-200' : ''
             return (
               <div key={m.id} className={`flex items-end gap-2 ${mine ? 'justify-end' : 'justify-start'}`}>
                 {!mine ? (
@@ -140,17 +153,25 @@ export default function ChatThreadPage() {
                   className={`max-w-[85%] p-3 rounded-2xl ${
                     mine
                       ? 'bg-[var(--brand)] text-white border-transparent'
-                      : 'bg-[var(--bg-elevated)] border-[var(--border)]'
+                      : inboundUnread
+                        ? 'bg-[var(--brand-soft)] border-[var(--brand)]'
+                        : 'bg-[var(--bg-elevated)] border-[var(--border)]'
                   }`}
                 >
                   <p className={`text-sm leading-relaxed whitespace-pre-wrap ${mine ? 'text-white' : 'text-[var(--text)]'}`}>
                     {m.text}
                   </p>
-                  <p
-                    className={`text-[11px] mt-1 ${mine ? 'text-white/75' : 'text-[var(--text-muted)]'}`}
-                  >
-                    {new Date(m.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <div className={`text-[11px] mt-1 flex flex-wrap items-center gap-x-2 ${mine ? 'text-white/75' : 'text-[var(--text-muted)]'}`}>
+                    <span>
+                      {new Date(m.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {mine && deliveryLabel ? (
+                      <span className={`font-semibold ${deliveryClass}`}>{deliveryLabel}</span>
+                    ) : null}
+                    {!mine && inboundUnread ? (
+                      <span className="font-semibold text-[var(--brand)]">New</span>
+                    ) : null}
+                  </div>
                 </Card>
                 {mine ? (
                   <ChatAvatar

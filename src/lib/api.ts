@@ -105,6 +105,8 @@ export type ConversationListItem = {
   updatedAt: string
   lastMessageAt?: string
   lastMessagePreview?: string
+  lastMessageSenderId?: string
+  lastMessageStatus?: 'sent' | 'delivered' | 'read' | 'received'
 }
 
 export type ChatMessage = {
@@ -116,6 +118,8 @@ export type ChatMessage = {
   senderDisplayName?: string
   senderName?: string
   senderAvatarUrl?: string
+  isUnread?: boolean
+  deliveryStatus?: 'sent' | 'delivered' | 'read'
 }
 
 export async function createConversation(participantId: string) {
@@ -127,6 +131,23 @@ export async function createConversation(participantId: string) {
 
 export async function listConversations() {
   return api<{ conversations: ConversationListItem[] }>('/conversations', { method: 'GET' })
+}
+
+export async function deleteConversation(conversationId: string) {
+  await api(`/conversations/${encodeURIComponent(conversationId)}`, { method: 'DELETE' })
+}
+
+export type PublicUserProfile = {
+  id: string
+  name: string
+  displayName?: string
+  role: string
+  avatarUrl?: string
+  ratingAverage?: number
+}
+
+export async function getPublicUser(userId: string) {
+  return api<{ user: PublicUserProfile }>(`/users/public/${encodeURIComponent(userId)}`, { method: 'GET' })
 }
 
 export async function postChatMessage(conversationId: string, text: string) {
@@ -167,6 +188,16 @@ export type ChatRecentTripRow = {
   driver?: { name?: string }
 }
 
+export type ChatActivityLogRow = {
+  id: string
+  tripId: string
+  at: string
+  who: string
+  summary: string
+}
+
 export async function listChatRecentTrips() {
-  return api<{ trips: ChatRecentTripRow[] }>('/chat/recent-trips', { method: 'GET' })
+  return api<{ trips: ChatRecentTripRow[]; activities?: ChatActivityLogRow[] }>('/chat/recent-trips', {
+    method: 'GET',
+  })
 }

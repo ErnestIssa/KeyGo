@@ -11,6 +11,8 @@ export interface User {
   avatarUrl?: string
   /** 0–5 display rating from API */
   ratingAverage?: number
+  /** Collected at signup */
+  phone?: string
 }
 
 export type TripStatus = 'pending' | 'accepted' | 'completed'

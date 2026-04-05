@@ -22,6 +22,7 @@ export default function AuthPage() {
   const { theme, toggleTheme } = useTheme()
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -42,9 +43,17 @@ export default function AuthPage() {
     setLoading(true)
     try {
       if (mode === 'signup') {
+        const digits = phone.replace(/\D/g, '')
+        if (digits.length < 7 || digits.length > 15) {
+          const msg = 'Enter a valid phone number (7–15 digits).'
+          setError(msg)
+          toast(msg, 'error')
+          setLoading(false)
+          return
+        }
         const res = await api<AuthSuccess>('/users/register', {
           method: 'POST',
-          body: JSON.stringify({ email, password, firstName, lastName, role }),
+          body: JSON.stringify({ email, password, firstName, lastName, role, phone: phone.trim() }),
         })
         finishAuth(res, 'Welcome — your account is ready.')
       } else {
@@ -196,6 +205,17 @@ export default function AuthPage() {
               required
               autoComplete="email"
             />
+            {mode === 'signup' && (
+              <Input
+                label="Phone number"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                autoComplete="tel"
+                hint="Include country code if you use +."
+              />
+            )}
             <div>
               <Input
                 label="Password"

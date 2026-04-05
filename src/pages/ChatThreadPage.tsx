@@ -111,6 +111,7 @@ export default function ChatThreadPage() {
       const m = normalizeMessage(raw)
       if (m.senderId !== myIdRef.current) {
         m.isUnread = true
+        socket.emit('message_delivered', { messageId: m.id })
       }
       setMessages((prev) => {
         if (prev.some((x) => x.id === m.id)) return prev
@@ -126,6 +127,33 @@ export default function ChatThreadPage() {
         })
       }
     })
+
+    socket.on('message_updated', (payload: { message?: ChatMessage }) => {
+      const m = payload?.message
+      if (!m || m.conversationId !== conversationId) return
+      const n = normalizeMessage(m)
+      setMessages((prev) => {
+        const i = prev.findIndex((x) => x.id === n.id)
+        if (i === -1) return [...prev, n]
+        const next = [...prev]
+        next[i] = n
+        return next
+      })
+    })
+
+    socket.on(
+      'message_delivery',
+      (payload: { conversationId?: string; messageId?: string }) => {
+        if (!payload || payload.conversationId !== conversationId || !payload.messageId) return
+        setMessages((prev) =>
+          prev.map((x) =>
+            x.id === payload.messageId && x.senderId === myIdRef.current
+              ? { ...x, deliveryStatus: 'delivered' as const }
+              : x,
+          ),
+        )
+      },
+    )
 
     socket.on(
       'messages_read',

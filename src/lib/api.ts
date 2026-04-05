@@ -119,10 +119,13 @@ export type ConversationListItem = {
   isLocked?: boolean
 }
 
+export type ChatMessageKind = 'text' | 'image' | 'video' | 'file' | 'audio' | 'call' | 'system'
+
 export type ChatMessage = {
   id: string
   conversationId: string
   senderId: string
+  kind?: ChatMessageKind
   text: string
   createdAt: string
   senderDisplayName?: string
@@ -130,6 +133,17 @@ export type ChatMessage = {
   senderAvatarUrl?: string
   isUnread?: boolean
   deliveryStatus?: 'sent' | 'delivered' | 'read'
+  mediaUrl?: string
+  fileName?: string
+  mimeType?: string
+  durationSec?: number
+  replyToMessageId?: string
+  replyToPreview?: string
+  reactions?: { userId: string; emoji: string }[]
+  starredByMe?: boolean
+  isPinned?: boolean
+  deleted?: boolean
+  deletedPlaceholder?: boolean
 }
 
 export async function createConversation(participantId: string) {
@@ -200,7 +214,7 @@ export async function postChatMessage(conversationId: string, text: string) {
 }
 
 export async function listChatMessages(conversationId: string) {
-  return api<{ messages: ChatMessage[]; peerLastReadAt?: string | null }>(
+  return api<{ messages: ChatMessage[]; peerLastReadAt?: string | null; pinnedMessageId?: string | null }>(
     `/messages/${encodeURIComponent(conversationId)}`,
     { method: 'GET' },
   )

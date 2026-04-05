@@ -96,6 +96,14 @@ export type ChatUserPreview = {
   avatarUrl?: string
 }
 
+export type ConversationMySettings = {
+  archived: boolean
+  muted: boolean
+  favorite: boolean
+  listTag: string | null
+  manualUnread: boolean
+}
+
 export type ConversationListItem = {
   id: string
   participants: string[]
@@ -107,6 +115,8 @@ export type ConversationListItem = {
   lastMessagePreview?: string
   lastMessageSenderId?: string
   lastMessageStatus?: 'sent' | 'delivered' | 'read' | 'received'
+  mySettings?: ConversationMySettings
+  isLocked?: boolean
 }
 
 export type ChatMessage = {
@@ -129,12 +139,44 @@ export async function createConversation(participantId: string) {
   )
 }
 
-export async function listConversations() {
-  return api<{ conversations: ConversationListItem[] }>('/conversations', { method: 'GET' })
+export async function listConversations(includeArchived?: boolean) {
+  const q = includeArchived ? '?includeArchived=1' : ''
+  return api<{ conversations: ConversationListItem[] }>(`/conversations${q}`, { method: 'GET' })
 }
 
 export async function deleteConversation(conversationId: string) {
   await api(`/conversations/${encodeURIComponent(conversationId)}`, { method: 'DELETE' })
+}
+
+export async function patchConversationSettings(
+  conversationId: string,
+  patch: Partial<{
+    archived: boolean
+    muted: boolean
+    favorite: boolean
+    listTag: string | null
+    manualUnread: boolean
+  }>,
+) {
+  return api<{ settings: ConversationMySettings }>(`/conversations/${encodeURIComponent(conversationId)}/settings`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+}
+
+export async function clearConversationHistory(conversationId: string) {
+  await api(`/conversations/${encodeURIComponent(conversationId)}/clear`, { method: 'POST' })
+}
+
+export async function postConversationMarkUnread(conversationId: string) {
+  await api(`/conversations/${encodeURIComponent(conversationId)}/mark-unread`, { method: 'POST' })
+}
+
+export async function postConversationLock(conversationId: string, locked: boolean) {
+  await api(`/conversations/${encodeURIComponent(conversationId)}/lock`, {
+    method: 'POST',
+    body: JSON.stringify({ locked }),
+  })
 }
 
 export type PublicUserProfile = {
